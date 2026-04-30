@@ -26,13 +26,9 @@ class DiscordInteractionControllerTest extends TestCase
 
     public function test_handle_starts_debate_on_slash_command(): void
     {
-        $useCase = Mockery::mock(StartDebateUseCase::class);
-        $this->app->instance(StartDebateUseCase::class, $useCase);
+        \Illuminate\Support\Facades\Queue::fake();
 
         $topic = 'AIの未来について';
-        $threadId = 'thread_456';
-
-        $useCase->shouldReceive('execute')->once()->with($topic)->andReturn($threadId);
 
         $response = $this->postJson('/api/discord/interactions', [
             'type' => 2,
@@ -54,9 +50,13 @@ class DiscordInteractionControllerTest extends TestCase
             ->assertJson([
                 'type' => 4,
                 'data' => [
-                    'content' => "専用スレッドを作成しました: <#{$threadId}>"
+                    'content' => "🤖 議題『{$topic}』を受け付けました！スレッドを作成してAIたちを呼び出します..."
                 ]
             ]);
+
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic) {
+            return $job->topic === $topic;
+        });
     }
 
     public function test_handle_returns_401_on_missing_signature(): void

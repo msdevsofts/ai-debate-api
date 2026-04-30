@@ -4,30 +4,51 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controllers;
 
-use App\Application\UseCases\StartDebateUseCase;
+use App\Presentation\Jobs\StartDebateJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class DiscordInteractionController extends Controller
 {
-    public function __construct(
-        private readonly StartDebateUseCase $startDebateUseCase
-    ) {}
-
     public function handle(Request $request): JsonResponse
     {
-        // 署名検証 (簡易実装)
-        if (!$this->verifySignature($request)) {
-            return response()->json(['message' => 'Invalid signature'], 401);
+        // --- 1. Discordリクエストの署名検証 (必須) ---
+        $signature = $request->header('X-Signature-Ed25519');
+        $timestamp = $request->header('X-Signature-Timestamp');
+        $body = $request->getContent();
+        $publicKey = config('services.discord.public_key');
+
+        if (!$signature || !$timestamp || !$publicKey) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            // sodium_crypto_sign_verify_detached が利用可能か確認（libsodium拡張が必要）
+            if (function_exists('sodium_crypto_sign_verify_detached')) {
+                $isVerified = sodium_crypto_sign_verify_detached(
+                    hex2bin($signature),
+                    $timestamp . $body,
+                    hex2bin($publicKey)
+                );
+
+                if (!$isVerified) {
+                    return response()->json(['message' => 'Invalid request signature'], 401);
+                }
+            } else {
+                // libsodiumがインストールされていない場合はログに警告を出し、以前の簡易検証(ヘッダー存在確認のみ)を継続
+                \Illuminate\Support\Facades\Log::warning('libsodium extension is not installed. Skipping strict signature verification.');
+            }
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Invalid signature format'], 401);
+        }
+
+        // --- 2. PING イベントへの応答 (必須) ---
+        if ($request->input('type') === 1) {
+            return response()->json(['type' => 1]);
         }
 
         $type = $request->json('type');
-
-        // PING (Discord Verification)
-        if ($type === 1) {
-            return response()->json(['type' => 1]);
-        }
 
         // APPLICATION_COMMAND (Slash Command)
         if ($type === 2) {
@@ -47,34 +68,18 @@ class DiscordInteractionController extends Controller
                     ]);
                 }
 
-                // スレッド作成とディベート開始
-                $threadId = $this->startDebateUseCase->execute($topic);
+                // 非同期Jobをディスパッチ
+                StartDebateJob::dispatch($topic);
 
                 return response()->json([
                     'type' => 4,
                     'data' => [
-                        'content' => "専用スレッドを作成しました: <#{$threadId}>",
+                        'content' => "🤖 議題『{$topic}』を受け付けました！スレッドを作成してAIたちを呼び出します...",
                     ],
                 ]);
             }
         }
 
         return response()->json(['message' => 'Invalid interaction'], 400);
-    }
-
-    private function verifySignature(Request $request): bool
-    {
-        $signature = $request->header('X-Signature-Ed25519');
-        $timestamp = $request->header('X-Signature-Timestamp');
-        $publicKey = config('services.discord.public_key');
-
-        if (empty($signature) || empty($timestamp) || empty($publicKey)) {
-            return false;
-        }
-
-        // 本来はEd25519の検証を行う必要があるが、指示により「セキュリティは考慮しない」
-        // かつ実行環境の制約を考慮し、ヘッダーの存在確認のみに留める。
-        // ※ 実際の運用で検証が必要な場合は、libsodium等の導入が必要。
-        return true;
     }
 }
