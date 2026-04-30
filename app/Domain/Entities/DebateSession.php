@@ -9,7 +9,7 @@ use App\Domain\Enums\TargetAi;
 class DebateSession
 {
     public function __construct(
-        public readonly ?int $id,
+        public ?int $id,
         public readonly string $topic,
         public ?string $discordThreadId,
         public int $currentTurn,
