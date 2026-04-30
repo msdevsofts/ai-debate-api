@@ -22,6 +22,8 @@ class DifyApiAdapter
     public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic): array
     {
         $response = Http::withToken($this->apiKey)
+            ->timeout(900)
+            ->connectTimeout(900)
             ->post("{$this->baseUrl}/chat-messages", [
                 'inputs' => [
                     'target_ai' => $targetAi->value,
@@ -41,6 +43,16 @@ class DifyApiAdapter
             throw new \RuntimeException('Dify API call failed');
         }
 
-        return $response->json();
+        $data = $response->json();
+
+        // answerフィールドが存在する場合、思考ログ（<think>タグや(think)など）を除去する
+        if (isset($data['answer'])) {
+            // <think>...</think> や (think)... を正規表現で削除
+            $data['answer'] = preg_replace('/<(think|thought)>.*?<\/\1>/s', '', $data['answer']);
+            $data['answer'] = preg_replace('/^\(think\).*?(\n|$)/s', '', $data['answer']);
+            $data['answer'] = trim($data['answer']);
+        }
+
+        return $data;
     }
 }
