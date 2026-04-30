@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Infrastructure\Eloquent;
+
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * @property int $id
+ * @property string $topic
+ * @property string|null $discord_thread_id
+ * @property int $current_turn
+ * @property int $max_turns
+ * @property string|null $dify_conversation_id
+ * @property string $status
+ */
+class DebateSessionModel extends Model
+{
+    protected $table = 'debate_sessions';
+
+    protected $fillable = [
+        'topic',
+        'discord_thread_id',
+        'current_turn',
+        'max_turns',
+        'dify_conversation_id',
+        'status',
+    ];
+}

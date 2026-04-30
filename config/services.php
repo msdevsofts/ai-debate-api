@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'dify' => [
+        'base_url' => env('DIFY_API_BASE_URL', 'http://10.10.1.10/v1'),
+        'api_key' => env('DIFY_API_KEY'),
+    ],
+
+    'discord' => [
+        'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'channel_id' => env('DISCORD_CHANNEL_ID'),
+        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+        'public_key' => env('DISCORD_PUBLIC_KEY'),
+    ],
+
 ];
