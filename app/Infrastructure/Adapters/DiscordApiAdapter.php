@@ -23,12 +23,13 @@ class DiscordApiAdapter
 
     public function createThread(string $name): string
     {
-        $response = Http::withToken($this->botToken)
-            ->post("https://discord.com/api/v10/channels/{$this->channelId}/threads", [
-                'name' => $name,
-                'type' => 11, // GUILD_PUBLIC_THREAD
-                'auto_archive_duration' => 60,
-            ]);
+        $response = Http::withHeaders([
+            'Authorization' => "Bot {$this->botToken}",
+        ])->post("https://discord.com/api/v10/channels/{$this->channelId}/threads", [
+            'name' => $name,
+            'type' => 11, // GUILD_PUBLIC_THREAD
+            'auto_archive_duration' => 60,
+        ]);
 
         if ($response->failed()) {
             Log::error('Discord Create Thread Error', [
