@@ -32,7 +32,8 @@ class ProcessDebateTurnUseCase
             $response = $this->difyAdapter->chat(
                 $session->topic,
                 $session->difyConversationId,
-                $targetAi
+                $targetAi,
+                $session->topic
             );
 
             // 履歴IDを更新

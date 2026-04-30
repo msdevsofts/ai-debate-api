@@ -19,12 +19,13 @@ class DifyApiAdapter
         $this->apiKey = config('services.dify.api_key');
     }
 
-    public function chat(string $query, ?string $conversationId, TargetAi $targetAi): array
+    public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic): array
     {
         $response = Http::withToken($this->apiKey)
             ->post("{$this->baseUrl}/chat-messages", [
                 'inputs' => [
                     'target_ai' => $targetAi->value,
+                    'topic' => $topic,
                 ],
                 'query' => $query,
                 'response_mode' => 'blocking',

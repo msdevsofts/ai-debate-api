@@ -38,7 +38,12 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
-        $difyAdapter->shouldReceive('chat')->once()->andReturn([
+        $difyAdapter->shouldReceive('chat')->with(
+            $session->topic,
+            $session->difyConversationId,
+            TargetAi::GEMMA,
+            $session->topic
+        )->once()->andReturn([
             'answer' => 'AIの未来は明るいです。',
             'conversation_id' => 'conv_123'
         ]);
@@ -77,7 +82,12 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
-        $difyAdapter->shouldReceive('chat')->once()->andReturn([
+        $difyAdapter->shouldReceive('chat')->with(
+            $session->topic,
+            $session->difyConversationId,
+            TargetAi::GEMINI_CONCLUSION,
+            $session->topic
+        )->once()->andReturn([
             'answer' => '結論として...',
             'conversation_id' => 'conv_123'
         ]);
