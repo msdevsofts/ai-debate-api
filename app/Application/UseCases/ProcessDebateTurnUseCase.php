@@ -61,6 +61,23 @@ class ProcessDebateTurnUseCase
         } catch (\Exception $e) {
             $session->fail();
             $this->repository->save($session);
+
+            // Discordスレッドにエラーを通知
+            if ($session->discordThreadId) {
+                try {
+                    $this->discordAdapter->postToWebhook(
+                        "⚠️ システムエラーが発生したため、議論を中断します。\nエラー内容: " . $e->getMessage(),
+                        $session->discordThreadId,
+                        $targetAi
+                    );
+                } catch (\Exception $discordEx) {
+                    // 通知自体の失敗はログに留める
+                    \Illuminate\Support\Facades\Log::error('Failed to notify error to Discord', [
+                        'error' => $discordEx->getMessage()
+                    ]);
+                }
+            }
+
             throw $e;
         }
     }
