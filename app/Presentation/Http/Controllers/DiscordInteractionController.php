@@ -32,8 +32,20 @@ class DiscordInteractionController extends Controller
         // APPLICATION_COMMAND (Slash Command)
         if ($type === 2) {
             $data = $request->json('data');
-            if ($data['name'] === 'discuss') {
-                $topic = $data['options'][0]['value'] ?? '議題なし';
+            if (($data['name'] ?? '') === 'discuss') {
+                $options = $data['options'] ?? [];
+                $topicOption = collect($options)->firstWhere('name', 'topic');
+                $topic = $topicOption['value'] ?? null;
+
+                if (empty($topic)) {
+                    return response()->json([
+                        'type' => 4,
+                        'data' => [
+                            'content' => '議題を入力してください。',
+                            'flags' => 64, // Ephemeral
+                        ],
+                    ]);
+                }
 
                 // スレッド作成とディベート開始
                 $threadId = $this->startDebateUseCase->execute($topic);
