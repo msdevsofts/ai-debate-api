@@ -31,6 +31,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             topic: 'AIの未来について',
             initialAi: null,
             discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
             currentTurn: 0,
             maxTurns: 10,
             difyConversationId: null,
@@ -49,7 +50,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', '123456', TargetAi::GEMMA)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMMA)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
@@ -76,6 +77,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             topic: 'AIの未来について',
             initialAi: null,
             discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
             currentTurn: 10, // Max turns reached
             maxTurns: 10,
             difyConversationId: 'conv_123',
@@ -94,7 +96,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('結論として...', '123456', TargetAi::GEMINI_CONCLUSION)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('結論として...', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI_CONCLUSION)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);

@@ -23,10 +23,13 @@ class StartDebateUseCaseTest extends TestCase
 
         $topic = 'テストの議題';
         $channelId = 'channel_123';
+        $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
 
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic)->andReturn($channelId);
+        $discordAdapter->shouldReceive('createWebhook')->once()->with($channelId)->andReturn($webhookUrl);
 
-        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) {
+        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) use ($webhookUrl) {
+            $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
             $session->id = 1;
             return $session;
         });
@@ -49,12 +52,15 @@ class StartDebateUseCaseTest extends TestCase
 
         $topic = 'テストの議題';
         $channelId = 'channel_123';
+        $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
         $initialAi = 'gemini';
 
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic)->andReturn($channelId);
+        $discordAdapter->shouldReceive('createWebhook')->once()->with($channelId)->andReturn($webhookUrl);
 
-        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) use ($initialAi) {
+        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) use ($initialAi, $webhookUrl) {
             $this->assertEquals($initialAi, $session->initialAi->value);
+            $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
             $session->id = 1;
             return $session;
         });

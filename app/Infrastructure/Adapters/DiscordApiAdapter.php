@@ -53,21 +53,41 @@ class DiscordApiAdapter
         return (string) $response->json('id');
     }
 
-    public function postMessage(string $content, string $channelId, TargetAi $targetAi): void
+    public function createWebhook(string $channelId): string
     {
         $response = Http::withHeaders([
             'Authorization' => "Bot {$this->botToken}",
-        ])->post("https://discord.com/api/v10/channels/{$channelId}/messages", [
-            'content' => "**[{$targetAi->getName()}]**\n\n{$content}",
+        ])->post("https://discord.com/api/v10/channels/{$channelId}/webhooks", [
+            'name' => 'Debate Webhook',
         ]);
 
         if ($response->failed()) {
-            Log::error('Discord Post Message Error', [
+            Log::error('Discord Create Webhook Error', [
                 'status' => $response->status(),
                 'body' => $response->body(),
                 'channel_id' => $channelId,
             ]);
-            throw new \RuntimeException('Discord API post message failed');
+            throw new \RuntimeException('Discord API create webhook failed');
+        }
+
+        return (string) $response->json('url');
+    }
+
+    public function postMessage(string $content, string $webhookUrl, TargetAi $targetAi): void
+    {
+        $response = Http::post($webhookUrl, [
+            'content' => $content,
+            'username' => $targetAi->getName(),
+            'avatar_url' => $targetAi->getAvatarUrl(),
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Discord Post Webhook Message Error', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'webhook_url' => $webhookUrl,
+            ]);
+            throw new \RuntimeException('Discord API post webhook message failed');
         }
     }
 }

@@ -13,6 +13,7 @@ class DebateSession
         public readonly string $topic,
         public ?TargetAi $initialAi,
         public ?string $discordChannelId,
+        public ?string $discordWebhookUrl,
         public int $currentTurn,
         public int $maxTurns,
         public ?string $difyConversationId,

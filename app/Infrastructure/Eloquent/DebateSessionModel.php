@@ -24,6 +24,7 @@ class DebateSessionModel extends Model
         'topic',
         'initial_ai',
         'discord_channel_id',
+        'discord_webhook_url',
         'current_turn',
         'max_turns',
         'dify_conversation_id',
