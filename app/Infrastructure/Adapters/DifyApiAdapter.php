@@ -48,7 +48,11 @@ class DifyApiAdapter
         // answerフィールドが存在する場合、思考ログ（<think>タグや(think)など）を除去する
         if (isset($data['answer'])) {
             // 1. <think>...</think> や <thought>...</thought> を正規表現で削除 (sフラグで改行対応)
+            // タグの不整合（閉じタグが多すぎる、開始タグがない等）に対応するため、まずペアを消し、その後残ったタグを掃除する
             $data['answer'] = preg_replace('/<(think|thought)>.*?<\/\1>/s', '', $data['answer']);
+
+            // 残ってしまった開始タグ・閉じタグを個別に削除 (不完全な出力への対応)
+            $data['answer'] = preg_replace('/<(think|thought)>|<\/(think|thought)>/s', '', $data['answer']);
 
             // 2. (think) 形式を削除
             // (think) で始まり、その後の内容を、2つの連続する改行、または次のタグの開始まで削除

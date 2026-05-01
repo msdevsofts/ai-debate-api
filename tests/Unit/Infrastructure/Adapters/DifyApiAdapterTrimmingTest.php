@@ -90,4 +90,59 @@ class DifyApiAdapterTrimmingTest extends TestCase
 
         $this->assertEquals('Final conclusion', $result['answer']);
     }
+
+    public function test_chat_trims_multiple_consecutive_think_tags(): void
+    {
+        $input = <<<EOD
+<think>
+Thinking block 1
+</think>
+</think>
+</think>
+</think>
+Final actual response
+EOD;
+
+        Http::fake([
+            '*/chat-messages' => Http::response([
+                'answer' => $input,
+                'conversation_id' => 'conv_123'
+            ], 200)
+        ]);
+
+        $adapter = new DifyApiAdapter();
+        $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
+
+        $this->assertEquals('Final actual response', $result['answer']);
+    }
+
+    public function test_chat_handles_broken_tags_from_issue(): void
+    {
+        $input = <<<EOD
+この繰り返し「チャンネル化テスト4」の場合、データ分析の視点では、ユーザーの期待やコンテンツ生成のパフォーマンスを理解する必要があります。
+... (省略) ...
+評価する必要性を評価する必要があります。
+</think>この繰り返し「チャンネル化テスト4」は、ユーザーの期待やコンテンツ生成のパフォーマンスを理解するためのデータ分析の重要なステップである可能性があります。
+... (省略) ...
+</think>データ分析者は、「チャンネル化テスト4」入力を分析し、その目的と内容を理解することから始めます。
+... (省略) ...
+</think>
+チャンネル化テスト4
+この入力はUser が新しいコンテンツの生成アルゴリズムやユーザーインタラクションデザインを改善するための重要なステップです。これにより、User の期待やコンテンツ生成パフォーマンスに関する洞察が得られます。
+EOD;
+
+        Http::fake([
+            '*/chat-messages' => Http::response([
+                'answer' => $input,
+                'conversation_id' => 'conv_123'
+            ], 200)
+        ]);
+
+        $adapter = new DifyApiAdapter();
+        $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
+
+        // Check if common remnants are removed
+        $this->assertStringNotContainsString('</think>', $result['answer']);
+        $this->assertStringContainsString('チャンネル化テスト4', $result['answer']);
+    }
 }
