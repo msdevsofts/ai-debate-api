@@ -43,7 +43,7 @@ class ProcessDebateTurnUseCase
 
             // Discordメッセージ投稿
             $content = $response['answer'] ?? '';
-            $this->discordAdapter->postMessage($content, $session->discordChannelId);
+            $this->discordAdapter->postMessage($content, $session->discordChannelId, $targetAi);
 
             // ターンをインクリメント
             $session->incrementTurn();
@@ -68,7 +68,8 @@ class ProcessDebateTurnUseCase
                 try {
                     $this->discordAdapter->postMessage(
                         "⚠️ システムエラーが発生したため、議論を中断します。\nエラー内容: " . $e->getMessage(),
-                        $session->discordChannelId
+                        $session->discordChannelId,
+                        \App\Domain\Enums\TargetAi::GEMINI_CONCLUSION // エラー通知はシステム側（Gemini）として送信
                     );
                 } catch (\Exception $discordEx) {
                     // 通知自体の失敗はログに留める

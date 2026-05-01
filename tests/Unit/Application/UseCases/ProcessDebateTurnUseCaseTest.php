@@ -49,7 +49,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->once();
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', '123456', TargetAi::GEMMA)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
@@ -94,7 +94,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->once();
+        $discordAdapter->shouldReceive('postMessage')->with('結論として...', '123456', TargetAi::GEMINI_CONCLUSION)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
