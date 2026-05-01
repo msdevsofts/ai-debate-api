@@ -43,7 +43,6 @@ class DiscordApiAdapter
         ])->post("https://discord.com/api/v10/guilds/{$this->guildId}/channels", [
             'name' => $name,
             'type' => 0, // GUILD_TEXT
-            'parent_id' => $this->channelId, // 親カテゴリーやチャンネルを指定
         ]);
 
         if ($response->failed()) {
