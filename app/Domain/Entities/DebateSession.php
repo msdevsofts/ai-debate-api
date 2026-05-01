@@ -12,7 +12,7 @@ class DebateSession
         public ?int $id,
         public readonly string $topic,
         public ?TargetAi $initialAi,
-        public ?string $discordThreadId,
+        public ?string $discordChannelId,
         public int $currentTurn,
         public int $maxTurns,
         public ?string $difyConversationId,

@@ -6,6 +6,7 @@ namespace App\Infrastructure\Repositories;
 
 use App\Domain\Entities\DebateSession;
 use App\Domain\Repositories\DebateSessionRepositoryInterface;
+use App\Domain\Enums\TargetAi;
 use App\Infrastructure\Eloquent\DebateSessionModel;
 
 class DebateSessionRepository implements DebateSessionRepositoryInterface
@@ -27,7 +28,7 @@ class DebateSessionRepository implements DebateSessionRepositoryInterface
             [
                 'topic' => $session->topic,
                 'initial_ai' => $session->initialAi?->value,
-                'discord_thread_id' => $session->discordThreadId,
+                'discord_channel_id' => $session->discordChannelId,
                 'current_turn' => $session->currentTurn,
                 'max_turns' => $session->maxTurns,
                 'dify_conversation_id' => $session->difyConversationId,
@@ -44,7 +45,7 @@ class DebateSessionRepository implements DebateSessionRepositoryInterface
             id: $model->id,
             topic: $model->topic,
             initialAi: $model->initial_ai ? TargetAi::from($model->initial_ai) : null,
-            discordThreadId: $model->discord_thread_id,
+            discordChannelId: $model->discord_channel_id,
             currentTurn: $model->current_turn,
             maxTurns: $model->max_turns,
             difyConversationId: $model->dify_conversation_id,

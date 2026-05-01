@@ -22,9 +22,9 @@ class StartDebateUseCaseTest extends TestCase
         Queue::fake();
 
         $topic = 'テストの議題';
-        $threadId = 'thread_123';
+        $channelId = 'channel_123';
 
-        $discordAdapter->shouldReceive('createThread')->once()->with($topic)->andReturn($threadId);
+        $discordAdapter->shouldReceive('createChannel')->once()->with($topic)->andReturn($channelId);
 
         $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) {
             $session->id = 1;
@@ -37,7 +37,7 @@ class StartDebateUseCaseTest extends TestCase
         $result = $useCase->execute($topic);
 
         // Assert
-        $this->assertEquals($threadId, $result);
+        $this->assertEquals($channelId, $result);
         Queue::assertPushed(ProcessDebateTurn::class);
     }
 
@@ -48,10 +48,10 @@ class StartDebateUseCaseTest extends TestCase
         Queue::fake();
 
         $topic = 'テストの議題';
-        $threadId = 'thread_123';
+        $channelId = 'channel_123';
         $initialAi = 'gemini';
 
-        $discordAdapter->shouldReceive('createThread')->once()->with($topic)->andReturn($threadId);
+        $discordAdapter->shouldReceive('createChannel')->once()->with($topic)->andReturn($channelId);
 
         $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) use ($initialAi) {
             $this->assertEquals($initialAi, $session->initialAi->value);

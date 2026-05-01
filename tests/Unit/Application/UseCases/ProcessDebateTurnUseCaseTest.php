@@ -30,7 +30,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             id: $sessionId,
             topic: 'AIの未来について',
             initialAi: null,
-            discordThreadId: '123456',
+            discordChannelId: '123456',
             currentTurn: 0,
             maxTurns: 10,
             difyConversationId: null,
@@ -75,7 +75,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             id: $sessionId,
             topic: 'AIの未来について',
             initialAi: null,
-            discordThreadId: '123456',
+            discordChannelId: '123456',
             currentTurn: 10, // Max turns reached
             maxTurns: 10,
             difyConversationId: 'conv_123',

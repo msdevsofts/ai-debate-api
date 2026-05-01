@@ -50,7 +50,7 @@ class DiscordInteractionControllerTest extends TestCase
             ->assertJson([
                 'type' => 4,
                 'data' => [
-                    'content' => "🤖 議題『{$topic}』を受け付けました！スレッドを作成してAIたちを呼び出します..."
+                    'content' => "🤖 議題『{$topic}』を受け付けました！新規チャンネルを作成してAIたちを呼び出します..."
                 ]
             ]);
 

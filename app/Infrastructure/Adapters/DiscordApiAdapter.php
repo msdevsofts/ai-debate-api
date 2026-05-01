@@ -11,40 +11,55 @@ use Illuminate\Support\Facades\Log;
 class DiscordApiAdapter
 {
     private string $botToken;
+    private string $guildId;
     private string $channelId;
     private string $webhookUrl;
 
     public function __construct()
     {
         $this->botToken = config('services.discord.bot_token');
+        $this->guildId = config('services.discord.guild_id');
         $this->channelId = config('services.discord.channel_id');
         $this->webhookUrl = config('services.discord.webhook_url');
     }
 
-    public function createThread(string $name): string
+    public function createChannel(string $topic): string
     {
+        // チャンネル名のサニタイズ
+        // 1. 小文字化
+        // 2. スペースや記号をハイフンに置換
+        // 3. 100文字以内の切り詰め
+        $name = strtolower($topic);
+        $name = preg_replace('/[^a-z0-9]+/', '-', $name);
+        $name = trim($name, '-');
+        $name = mb_substr($name, 0, 100);
+
+        if (empty($name)) {
+            $name = 'debate-channel';
+        }
+
         $response = Http::withHeaders([
             'Authorization' => "Bot {$this->botToken}",
-        ])->post("https://discord.com/api/v10/channels/{$this->channelId}/threads", [
+        ])->post("https://discord.com/api/v10/guilds/{$this->guildId}/channels", [
             'name' => $name,
-            'type' => 11, // GUILD_PUBLIC_THREAD
-            'auto_archive_duration' => 60,
+            'type' => 0, // GUILD_TEXT
+            'parent_id' => $this->channelId, // 親カテゴリーやチャンネルを指定
         ]);
 
         if ($response->failed()) {
-            Log::error('Discord Create Thread Error', [
+            Log::error('Discord Create Channel Error', [
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
-            throw new \RuntimeException('Discord API create thread failed');
+            throw new \RuntimeException('Discord API create channel failed');
         }
 
         return (string) $response->json('id');
     }
 
-    public function postToWebhook(string $content, string $threadId, TargetAi $targetAi): void
+    public function postToWebhook(string $content, string $channelId, TargetAi $targetAi): void
     {
-        $url = "{$this->webhookUrl}?thread_id={$threadId}";
+        $url = "{$this->webhookUrl}?thread_id={$channelId}";
 
         $response = Http::post($url, [
             'content' => $content,
