@@ -47,6 +47,8 @@ class DifyApiAdapter
 
         // answerフィールドが存在する場合、思考ログ（<think>タグや(think)など）を除去する
         if (isset($data['answer'])) {
+            $rawAnswer = $data['answer'];
+
             // 1. <think>...</think> や <thought>...</thought> を正規表現で削除 (sフラグで改行対応)
             // タグの不整合（閉じタグが多すぎる、開始タグがない等）に対応するため、まずペアを消し、その後残ったタグを掃除する
             $data['answer'] = preg_replace('/<(think|thought)>.*?<\/\1>/s', '', $data['answer']);
@@ -65,6 +67,25 @@ class DifyApiAdapter
 
             // 5. 残った余計な改行や空白を整理
             $data['answer'] = trim($data['answer']);
+
+            // 6. クレンジングの結果、空になった場合のフォールバック
+            if (empty($data['answer'])) {
+                if (str_contains($rawAnswer, '[ENDTHINKFLAG]')) {
+                    // 最後の [ENDTHINKFLAG] より後ろを取得
+                    $parts = explode('[ENDTHINKFLAG]', $rawAnswer);
+                    $fallback = trim(end($parts));
+
+                    if (empty($fallback)) {
+                        // それでも空なら最後の思考の断片を抽出
+                        $lastFragment = trim($parts[count($parts) - 2] ?? '');
+                        $data['answer'] = mb_substr($lastFragment, -300) ?: '（AIが思考のみを出力しました。結論を生成中です...）';
+                    } else {
+                        $data['answer'] = $fallback;
+                    }
+                } else {
+                    $data['answer'] = '（AIが思考のみを出力しました。結論を生成中です...）';
+                }
+            }
         }
 
         return $data;

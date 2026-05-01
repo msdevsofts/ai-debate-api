@@ -169,4 +169,53 @@ EOD;
 
         $this->assertEquals('Final clean response', $result['answer']);
     }
+
+    public function test_chat_fallback_when_answer_is_empty_after_trimming(): void
+    {
+        Http::fake([
+            '*/chat-messages' => Http::response([
+                'answer' => "<think>I thought but have no conclusion</think>",
+                'conversation_id' => 'conv_123'
+            ], 200)
+        ]);
+
+        $adapter = new DifyApiAdapter();
+        $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
+
+        $this->assertEquals('（AIが思考のみを出力しました。結論を生成中です...）', $result['answer']);
+    }
+
+    public function test_chat_fallback_with_endthinkflag_remnant(): void
+    {
+        Http::fake([
+            '*/chat-messages' => Http::response([
+                'answer' => "Internal thought [ENDTHINKFLAG]",
+                'conversation_id' => 'conv_123'
+            ], 200)
+        ]);
+
+        $adapter = new DifyApiAdapter();
+        $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
+
+        // [ENDTHINKFLAG] より前が抽出される（300文字以内）
+        $this->assertEquals('Internal thought', $result['answer']);
+    }
+
+    public function test_chat_fallback_with_multiple_endthinkflag_remnant(): void
+    {
+        $thought = str_repeat('Long thought process... ', 20); // 24 * 20 = 480 chars
+        Http::fake([
+            '*/chat-messages' => Http::response([
+                'answer' => "First block [ENDTHINKFLAG] $thought [ENDTHINKFLAG]",
+                'conversation_id' => 'conv_123'
+            ], 200)
+        ]);
+
+        $adapter = new DifyApiAdapter();
+        $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
+
+        // 最後の思考ブロックが300文字に制限される
+        $this->assertEquals(300, mb_strlen($result['answer']));
+        $this->assertStringContainsString('Long thought process...', $result['answer']);
+    }
 }
