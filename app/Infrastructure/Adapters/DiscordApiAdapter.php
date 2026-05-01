@@ -57,22 +57,21 @@ class DiscordApiAdapter
         return (string) $response->json('id');
     }
 
-    public function postToWebhook(string $content, string $channelId, TargetAi $targetAi): void
+    public function postMessage(string $content, string $channelId): void
     {
-        $url = "{$this->webhookUrl}?thread_id={$channelId}";
-
-        $response = Http::post($url, [
+        $response = Http::withHeaders([
+            'Authorization' => "Bot {$this->botToken}",
+        ])->post("https://discord.com/api/v10/channels/{$channelId}/messages", [
             'content' => $content,
-            'username' => $targetAi->getName(),
-            'avatar_url' => $targetAi->getAvatarUrl(),
         ]);
 
         if ($response->failed()) {
-            Log::error('Discord Webhook Error', [
+            Log::error('Discord Post Message Error', [
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'channel_id' => $channelId,
             ]);
-            throw new \RuntimeException('Discord Webhook post failed');
+            throw new \RuntimeException('Discord API post message failed');
         }
     }
 }
