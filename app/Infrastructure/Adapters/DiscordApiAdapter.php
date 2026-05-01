@@ -50,6 +50,7 @@ class DiscordApiAdapter
             Log::error('Discord Create Channel Error', [
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'guild_id' => $this->guildId,
             ]);
             throw new \RuntimeException('Discord API create channel failed');
         }
