@@ -13,14 +13,19 @@ class DiscordInteractionController extends Controller
 {
     public function handle(Request $request): JsonResponse
     {
+        $bot = $request->query('bot');
+        \Log::info('Interaction received for bot: ' . $bot, $request->all());
+
         // --- 1. Discordリクエストの署名検証 (必須) ---
-        $botType = $request->query('bot');
+        $botType = $bot;
         $signature = $request->header('X-Signature-Ed25519');
         $timestamp = $request->header('X-Signature-Timestamp');
         $body = $request->getContent();
 
         // botパラメータに基づいて公開鍵を動的に切り替え
-        $publicKey = config("services.discord.public_keys.{$botType}") ?? config('services.discord.public_key');
+        // 文字列変換（ハイフンをアンダースコアに、大文字に）を適用してconfig/envから取得
+        $configKey = strtoupper(str_replace('-', '_', (string)$botType));
+        $publicKey = env("DISCORD_PUBLIC_KEY_{$configKey}") ?? config("services.discord.public_keys.{$botType}") ?? config('services.discord.public_key');
 
         if (!$signature || !$timestamp || !$publicKey) {
             return response()->json(['message' => 'Unauthorized'], 401);
@@ -58,30 +63,14 @@ class DiscordInteractionController extends Controller
             $data = $request->json('data');
             if (($data['name'] ?? '') === 'discuss') {
                 $options = $data['options'] ?? [];
-                $topicOption = collect($options)->firstWhere('name', 'topic');
-                $topic = $topicOption['value'] ?? null;
+                $topic = collect($options)->firstWhere('name', 'topic')['value'] ?? null;
+                $initialAi = collect($options)->firstWhere('name', 'model')['value'] ?? null;
 
-                $modelOption = collect($options)->firstWhere('name', 'model');
-                $initialAi = $modelOption['value'] ?? null;
-
-                if (empty($topic)) {
-                    return response()->json([
-                        'type' => 4,
-                        'data' => [
-                            'content' => '議題を入力してください。',
-                            'flags' => 64, // Ephemeral
-                        ],
-                    ]);
-                }
-
-                // 非同期Jobをディスパッチ (triggerBotとしてbotTypeを渡す)
-                StartDebateJob::dispatch($topic, $initialAi, $botType);
+                // 非同期Jobをディスパッチして即座にDEFERREDを返す
+                StartDebateJob::dispatch($topic, $initialAi, $bot);
 
                 return response()->json([
-                    'type' => 4,
-                    'data' => [
-                        'content' => "🤖 議題『{$topic}』を受け付けました！新規チャンネルを作成してAIたちを呼び出します...",
-                    ],
+                    'type' => 5,
                 ]);
             }
         }
