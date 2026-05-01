@@ -29,6 +29,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $session = new DebateSession(
             id: $sessionId,
             topic: 'AIの未来について',
+            initialAi: null,
             discordThreadId: '123456',
             currentTurn: 0,
             maxTurns: 10,
@@ -73,6 +74,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $session = new DebateSession(
             id: $sessionId,
             topic: 'AIの未来について',
+            initialAi: null,
             discordThreadId: '123456',
             currentTurn: 10, // Max turns reached
             maxTurns: 10,

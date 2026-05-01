@@ -58,6 +58,9 @@ class DiscordInteractionController extends Controller
                 $topicOption = collect($options)->firstWhere('name', 'topic');
                 $topic = $topicOption['value'] ?? null;
 
+                $modelOption = collect($options)->firstWhere('name', 'model');
+                $initialAi = $modelOption['value'] ?? null;
+
                 if (empty($topic)) {
                     return response()->json([
                         'type' => 4,
@@ -69,7 +72,7 @@ class DiscordInteractionController extends Controller
                 }
 
                 // 非同期Jobをディスパッチ
-                StartDebateJob::dispatch($topic);
+                StartDebateJob::dispatch($topic, $initialAi);
 
                 return response()->json([
                     'type' => 4,

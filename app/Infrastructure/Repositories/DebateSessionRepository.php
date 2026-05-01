@@ -26,6 +26,7 @@ class DebateSessionRepository implements DebateSessionRepositoryInterface
             ['id' => $session->id],
             [
                 'topic' => $session->topic,
+                'initial_ai' => $session->initialAi?->value,
                 'discord_thread_id' => $session->discordThreadId,
                 'current_turn' => $session->currentTurn,
                 'max_turns' => $session->maxTurns,
@@ -42,6 +43,7 @@ class DebateSessionRepository implements DebateSessionRepositoryInterface
         return new DebateSession(
             id: $model->id,
             topic: $model->topic,
+            initialAi: $model->initial_ai ? TargetAi::from($model->initial_ai) : null,
             discordThreadId: $model->discord_thread_id,
             currentTurn: $model->current_turn,
             maxTurns: $model->max_turns,

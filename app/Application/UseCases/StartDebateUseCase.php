@@ -16,7 +16,7 @@ class StartDebateUseCase
         private readonly DiscordApiAdapter $discordAdapter
     ) {}
 
-    public function execute(string $topic): string
+    public function execute(string $topic, ?string $initialAi = null): string
     {
         // 1. Discord スレッド作成
         $threadId = $this->discordAdapter->createThread($topic);
@@ -25,6 +25,7 @@ class StartDebateUseCase
         $session = new DebateSession(
             id: null,
             topic: $topic,
+            initialAi: $initialAi ? \App\Domain\Enums\TargetAi::tryFrom($initialAi) : null,
             discordThreadId: $threadId,
             currentTurn: 0,
             maxTurns: 10, // デフォルト10
