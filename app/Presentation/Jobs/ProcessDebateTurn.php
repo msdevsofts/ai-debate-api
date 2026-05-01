@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Presentation\Jobs;
 
 use App\Application\UseCases\ProcessDebateTurnUseCase;
+use App\Domain\Enums\TargetAi;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,17 +27,27 @@ class ProcessDebateTurn implements ShouldQueue
      */
     public int $tries = 3;
 
+    public ?TargetAi $targetAi = null;
+
     public function __construct(
         private readonly int $debateSessionId,
-        private readonly ?\App\Domain\Enums\TargetAi $targetAi = null,
+        ?TargetAi $targetAi = null,
         private readonly ?string $query = null,
         private readonly ?string $replyToMessageId = null
-    ) {}
+    ) {
+        $this->targetAi = $targetAi;
+    }
 
     public function handle(ProcessDebateTurnUseCase $useCase): void
     {
         try {
-            $useCase->execute($this->debateSessionId, $this->targetAi, $this->query, $this->replyToMessageId);
+            // targetAi が null の場合は execute 内でローテーションロジックが走る
+            $useCase->execute(
+                $this->debateSessionId,
+                $this->targetAi,
+                $this->query,
+                $this->replyToMessageId
+            );
         } catch (\Exception $e) {
             Log::error('ProcessDebateTurn Job Failed', [
                 'session_id' => $this->debateSessionId,
