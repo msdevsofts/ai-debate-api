@@ -11,53 +11,83 @@ use Illuminate\Support\Facades\Log;
 class DiscordApiAdapter
 {
     private string $botToken;
+    private string $guildId;
     private string $channelId;
     private string $webhookUrl;
 
     public function __construct()
     {
         $this->botToken = config('services.discord.bot_token');
+        $this->guildId = config('services.discord.guild_id');
         $this->channelId = config('services.discord.channel_id');
         $this->webhookUrl = config('services.discord.webhook_url');
     }
 
-    public function createThread(string $name): string
+    public function createChannel(string $topic): string
     {
+        // チャンネル名のサニタイズ (Str::slug を使用し、Discordの命名規則に合わせる)
+        $name = \Illuminate\Support\Str::slug($topic);
+        $name = mb_substr($name, 0, 100);
+
+        if (empty($name)) {
+            $name = 'debate-channel';
+        }
+
         $response = Http::withHeaders([
             'Authorization' => "Bot {$this->botToken}",
-        ])->post("https://discord.com/api/v10/channels/{$this->channelId}/threads", [
+        ])->post("https://discord.com/api/v10/guilds/{$this->guildId}/channels", [
             'name' => $name,
-            'type' => 11, // GUILD_PUBLIC_THREAD
-            'auto_archive_duration' => 60,
+            'type' => 0, // GUILD_TEXT
+            'topic' => $topic, // チャンネル説明欄に元のトピックをセット
         ]);
 
         if ($response->failed()) {
-            Log::error('Discord Create Thread Error', [
+            Log::error('Discord Create Channel Error', [
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'guild_id' => $this->guildId,
             ]);
-            throw new \RuntimeException('Discord API create thread failed');
+            throw new \RuntimeException('Discord API create channel failed');
         }
 
         return (string) $response->json('id');
     }
 
-    public function postToWebhook(string $content, string $threadId, TargetAi $targetAi): void
+    public function createWebhook(string $channelId): string
     {
-        $url = "{$this->webhookUrl}?thread_id={$threadId}";
+        $response = Http::withHeaders([
+            'Authorization' => "Bot {$this->botToken}",
+        ])->post("https://discord.com/api/v10/channels/{$channelId}/webhooks", [
+            'name' => 'Debate Webhook',
+        ]);
 
-        $response = Http::post($url, [
+        if ($response->failed()) {
+            Log::error('Discord Create Webhook Error', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'channel_id' => $channelId,
+            ]);
+            throw new \RuntimeException('Discord API create webhook failed');
+        }
+
+        return (string) $response->json('url');
+    }
+
+    public function postMessage(string $content, string $webhookUrl, TargetAi $targetAi): void
+    {
+        $response = Http::post($webhookUrl, [
             'content' => $content,
             'username' => $targetAi->getName(),
             'avatar_url' => $targetAi->getAvatarUrl(),
         ]);
 
         if ($response->failed()) {
-            Log::error('Discord Webhook Error', [
+            Log::error('Discord Post Webhook Message Error', [
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'webhook_url' => $webhookUrl,
             ]);
-            throw new \RuntimeException('Discord Webhook post failed');
+            throw new \RuntimeException('Discord API post webhook message failed');
         }
     }
 }

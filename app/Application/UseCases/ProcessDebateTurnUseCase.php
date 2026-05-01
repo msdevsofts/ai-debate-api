@@ -41,9 +41,11 @@ class ProcessDebateTurnUseCase
                 $session->difyConversationId = $response['conversation_id'];
             }
 
-            // Discord Webhook投稿
+            // Discordメッセージ投稿
             $content = $response['answer'] ?? '';
-            $this->discordAdapter->postToWebhook($content, $session->discordThreadId, $targetAi);
+            if ($session->discordWebhookUrl) {
+                $this->discordAdapter->postMessage($content, $session->discordWebhookUrl, $targetAi);
+            }
 
             // ターンをインクリメント
             $session->incrementTurn();
@@ -63,13 +65,13 @@ class ProcessDebateTurnUseCase
             $session->fail();
             $this->repository->save($session);
 
-            // Discordスレッドにエラーを通知
-            if ($session->discordThreadId) {
+            // Discordチャンネルにエラーを通知
+            if ($session->discordWebhookUrl) {
                 try {
-                    $this->discordAdapter->postToWebhook(
+                    $this->discordAdapter->postMessage(
                         "⚠️ システムエラーが発生したため、議論を中断します。\nエラー内容: " . $e->getMessage(),
-                        $session->discordThreadId,
-                        $targetAi
+                        $session->discordWebhookUrl,
+                        \App\Domain\Enums\TargetAi::GEMINI_CONCLUSION // エラー通知はシステム側（Gemini）として送信
                     );
                 } catch (\Exception $discordEx) {
                     // 通知自体の失敗はログに留める

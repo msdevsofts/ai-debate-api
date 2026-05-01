@@ -29,7 +29,9 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $session = new DebateSession(
             id: $sessionId,
             topic: 'AIの未来について',
-            discordThreadId: '123456',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
             currentTurn: 0,
             maxTurns: 10,
             difyConversationId: null,
@@ -41,14 +43,14 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $difyAdapter->shouldReceive('chat')->with(
             $session->topic,
             $session->difyConversationId,
-            TargetAi::GEMMA,
+            TargetAi::GEMINI,
             $session->topic
         )->once()->andReturn([
             'answer' => 'AIの未来は明るいです。',
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postToWebhook')->once();
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
@@ -73,7 +75,9 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $session = new DebateSession(
             id: $sessionId,
             topic: 'AIの未来について',
-            discordThreadId: '123456',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
             currentTurn: 10, // Max turns reached
             maxTurns: 10,
             difyConversationId: 'conv_123',
@@ -92,7 +96,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postToWebhook')->once();
+        $discordAdapter->shouldReceive('postMessage')->with('結論として...', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI_CONCLUSION)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);

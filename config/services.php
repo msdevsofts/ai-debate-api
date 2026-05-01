@@ -42,6 +42,7 @@ return [
 
     'discord' => [
         'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'guild_id' => env('DISCORD_GUILD_ID'),
         'channel_id' => env('DISCORD_CHANNEL_ID'),
         'webhook_url' => env('DISCORD_WEBHOOK_URL'),
         'public_key' => env('DISCORD_PUBLIC_KEY'),

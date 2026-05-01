@@ -22,11 +22,14 @@ class StartDebateUseCaseTest extends TestCase
         Queue::fake();
 
         $topic = 'テストの議題';
-        $threadId = 'thread_123';
+        $channelId = 'channel_123';
+        $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
 
-        $discordAdapter->shouldReceive('createThread')->once()->with($topic)->andReturn($threadId);
+        $discordAdapter->shouldReceive('createChannel')->once()->with($topic)->andReturn($channelId);
+        $discordAdapter->shouldReceive('createWebhook')->once()->with($channelId)->andReturn($webhookUrl);
 
-        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) {
+        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) use ($webhookUrl) {
+            $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
             $session->id = 1;
             return $session;
         });
@@ -37,7 +40,37 @@ class StartDebateUseCaseTest extends TestCase
         $result = $useCase->execute($topic);
 
         // Assert
-        $this->assertEquals($threadId, $result);
+        $this->assertEquals($channelId, $result);
+        Queue::assertPushed(ProcessDebateTurn::class);
+    }
+
+    public function test_execute_starts_debate_with_specified_initial_ai(): void
+    {
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        $topic = 'テストの議題';
+        $channelId = 'channel_123';
+        $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
+        $initialAi = 'gemini';
+
+        $discordAdapter->shouldReceive('createChannel')->once()->with($topic)->andReturn($channelId);
+        $discordAdapter->shouldReceive('createWebhook')->once()->with($channelId)->andReturn($webhookUrl);
+
+        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) use ($initialAi, $webhookUrl) {
+            $this->assertEquals($initialAi, $session->initialAi->value);
+            $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
+            $session->id = 1;
+            return $session;
+        });
+
+        $useCase = new StartDebateUseCase($repository, $discordAdapter);
+
+        // Execute
+        $useCase->execute($topic, $initialAi);
+
+        // Assert
         Queue::assertPushed(ProcessDebateTurn::class);
     }
 }

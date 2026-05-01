@@ -22,8 +22,8 @@ class DifyApiAdapter
     public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic): array
     {
         $response = Http::withToken($this->apiKey)
-            ->timeout(900)
-            ->connectTimeout(900)
+            ->timeout(1000)
+            ->connectTimeout(60)
             ->post("{$this->baseUrl}/chat-messages", [
                 'inputs' => [
                     'target_ai' => $targetAi->value,
@@ -44,15 +44,68 @@ class DifyApiAdapter
         }
 
         $data = $response->json();
-
-        // answerフィールドが存在する場合、思考ログ（<think>タグや(think)など）を除去する
-        if (isset($data['answer'])) {
-            // <think>...</think> や (think)... を正規表現で削除
-            $data['answer'] = preg_replace('/<(think|thought)>.*?<\/\1>/s', '', $data['answer']);
-            $data['answer'] = preg_replace('/^\(think\).*?(\n|$)/s', '', $data['answer']);
-            $data['answer'] = trim($data['answer']);
-        }
+        $data['answer'] = $this->cleanAnswer($data['answer'] ?? '');
 
         return $data;
+    }
+
+    /**
+     * AIの回答から思考プロセス（<think>タグ等）を除去し、必要に応じてフォールバックを行う
+     */
+    private function cleanAnswer(string $answer): string
+    {
+        if (empty($answer)) {
+            return '';
+        }
+
+        $rawAnswer = $answer;
+
+        // 1. <think>...</think> や <thought>...</thought> を正規表現で削除 (sフラグで改行対応)
+        // タグの不整合（閉じタグが多すぎる、開始タグがない等）に対応するため、まずペアを消し、その後残ったタグを掃除する
+        $answer = preg_replace('/<(think|thought)>.*?<\/\1>/s', '', $answer);
+
+        // 残ってしまった開始タグ・閉じタグを個別に削除 (不完全な出力への対応)
+        $answer = preg_replace('/<(think|thought)>|<\/(think|thought)>/s', '', $answer);
+
+        // 2. (think) 形式を削除
+        // (think) で始まり、その後の内容を、2つの連続する改行、または次のタグの開始まで削除
+        $answer = preg_replace('/\(think\).*?(\n\n|(?=<)|$)/s', '', $answer);
+        // インラインや行末の (think) マーカーを個別に削除
+        $answer = preg_replace('/\(think\)/', '', $answer);
+
+        // 3. [ENDTHINKFLAG] までの内容を削除 (最後に出現するフラグまでを貪欲にマッチ)
+        $answer = preg_replace('/^.*\[ENDTHINKFLAG\]\s*/s', '', $answer);
+
+        // 4. 残った余計な改行や空白を整理
+        $answer = trim($answer);
+
+        // 5. クレンジングの結果、空になった場合のフォールバック
+        if (empty($answer)) {
+            return $this->getFallbackAnswer($rawAnswer);
+        }
+
+        return $answer;
+    }
+
+    /**
+     * 回答が空になった際の救済措置
+     */
+    private function getFallbackAnswer(string $rawAnswer): string
+    {
+        if (str_contains($rawAnswer, '[ENDTHINKFLAG]')) {
+            // 最後の [ENDTHINKFLAG] より後ろを取得
+            $parts = explode('[ENDTHINKFLAG]', $rawAnswer);
+            $fallback = trim(end($parts));
+
+            if (!empty($fallback)) {
+                return $fallback;
+            }
+
+            // それでも空なら最後の思考の断片を抽出
+            $lastFragment = trim($parts[count($parts) - 2] ?? '');
+            return mb_substr($lastFragment, -300) ?: '（AIが思考のみを出力しました。結論を生成中です...）';
+        }
+
+        return '（AIが思考のみを出力しました。結論を生成中です...）';
     }
 }

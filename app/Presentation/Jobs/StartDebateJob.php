@@ -16,14 +16,20 @@ class StartDebateJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * スレッド作成等の処理も念のため長めに設定
+     */
+    public int $timeout = 300;
+
     public function __construct(
-        public readonly string $topic
+        public readonly string $topic,
+        public readonly ?string $initialAi = null
     ) {}
 
     public function handle(StartDebateUseCase $useCase): void
     {
         try {
-            $useCase->execute($this->topic);
+            $useCase->execute($this->topic, $this->initialAi);
         } catch (\Exception $e) {
             Log::error('StartDebateJob Failed', [
                 'topic' => $this->topic,

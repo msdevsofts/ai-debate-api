@@ -16,16 +16,21 @@ class StartDebateUseCase
         private readonly DiscordApiAdapter $discordAdapter
     ) {}
 
-    public function execute(string $topic): string
+    public function execute(string $topic, ?string $initialAi = null): string
     {
-        // 1. Discord スレッド作成
-        $threadId = $this->discordAdapter->createThread($topic);
+        // 1. Discord チャンネル作成
+        $channelId = $this->discordAdapter->createChannel($topic);
 
-        // 2. セッション作成
+        // 2. Discord Webhook 作成
+        $webhookUrl = $this->discordAdapter->createWebhook($channelId);
+
+        // 3. セッション作成
         $session = new DebateSession(
             id: null,
             topic: $topic,
-            discordThreadId: $threadId,
+            initialAi: $initialAi ? \App\Domain\Enums\TargetAi::tryFrom($initialAi) : null,
+            discordChannelId: $channelId,
+            discordWebhookUrl: $webhookUrl,
             currentTurn: 0,
             maxTurns: 10, // デフォルト10
             difyConversationId: null,
@@ -34,9 +39,9 @@ class StartDebateUseCase
 
         $savedSession = $this->repository->save($session);
 
-        // 3. 非同期Jobディスパッチ
+        // 4. 非同期Jobディスパッチ
         ProcessDebateTurn::dispatch($savedSession->id);
 
-        return $threadId;
+        return $channelId;
     }
 }

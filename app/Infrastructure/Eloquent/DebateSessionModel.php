@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @property int $id
  * @property string $topic
- * @property string|null $discord_thread_id
+ * @property string|null $initial_ai
+ * @property string|null $discord_channel_id
  * @property int $current_turn
  * @property int $max_turns
  * @property string|null $dify_conversation_id
@@ -21,7 +22,9 @@ class DebateSessionModel extends Model
 
     protected $fillable = [
         'topic',
-        'discord_thread_id',
+        'initial_ai',
+        'discord_channel_id',
+        'discord_webhook_url',
         'current_turn',
         'max_turns',
         'dify_conversation_id',
