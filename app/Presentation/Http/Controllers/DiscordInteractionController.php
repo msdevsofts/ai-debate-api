@@ -14,10 +14,13 @@ class DiscordInteractionController extends Controller
     public function handle(Request $request): JsonResponse
     {
         // --- 1. Discordリクエストの署名検証 (必須) ---
+        $botType = $request->query('bot');
         $signature = $request->header('X-Signature-Ed25519');
         $timestamp = $request->header('X-Signature-Timestamp');
         $body = $request->getContent();
-        $publicKey = config('services.discord.public_key');
+
+        // botパラメータに基づいて公開鍵を動的に切り替え
+        $publicKey = config("services.discord.public_keys.{$botType}") ?? config('services.discord.public_key');
 
         if (!$signature || !$timestamp || !$publicKey) {
             return response()->json(['message' => 'Unauthorized'], 401);
@@ -71,8 +74,8 @@ class DiscordInteractionController extends Controller
                     ]);
                 }
 
-                // 非同期Jobをディスパッチ
-                StartDebateJob::dispatch($topic, $initialAi);
+                // 非同期Jobをディスパッチ (triggerBotとしてbotTypeを渡す)
+                StartDebateJob::dispatch($topic, $initialAi, $botType);
 
                 return response()->json([
                     'type' => 4,

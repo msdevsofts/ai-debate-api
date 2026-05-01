@@ -46,6 +46,12 @@ return [
         'channel_id' => env('DISCORD_CHANNEL_ID'),
         'webhook_url' => env('DISCORD_WEBHOOK_URL'),
         'public_key' => env('DISCORD_PUBLIC_KEY'),
+        'public_keys' => [
+            'gemini' => env('DISCORD_PUBLIC_KEY_GEMINI'),
+            'llama' => env('DISCORD_PUBLIC_KEY_LLAMA'),
+            'gemma' => env('DISCORD_PUBLIC_KEY_GEMMA'),
+            'phi' => env('DISCORD_PUBLIC_KEY_PHI'),
+        ],
     ],
 
 ];

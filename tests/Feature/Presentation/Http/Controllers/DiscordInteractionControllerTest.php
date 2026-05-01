@@ -29,8 +29,9 @@ class DiscordInteractionControllerTest extends TestCase
         \Illuminate\Support\Facades\Queue::fake();
 
         $topic = 'AIの未来について';
+        $bot = 'llama';
 
-        $response = $this->postJson('/api/discord/interactions', [
+        $response = $this->postJson("/api/discord/interactions?bot={$bot}", [
             'type' => 2,
             'data' => [
                 'name' => 'discuss',
@@ -54,8 +55,8 @@ class DiscordInteractionControllerTest extends TestCase
                 ]
             ]);
 
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic) {
-            return $job->topic === $topic && $job->initialAi === null;
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic, $bot) {
+            return $job->topic === $topic && $job->initialAi === null && $job->triggerBot === $bot;
         });
     }
 
@@ -65,8 +66,9 @@ class DiscordInteractionControllerTest extends TestCase
 
         $topic = 'AIの未来について';
         $model = 'gemini';
+        $bot = 'gemini';
 
-        $response = $this->postJson('/api/discord/interactions', [
+        $response = $this->postJson("/api/discord/interactions?bot={$bot}", [
             'type' => 2,
             'data' => [
                 'name' => 'discuss',
@@ -88,8 +90,8 @@ class DiscordInteractionControllerTest extends TestCase
 
         $response->assertStatus(200);
 
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic, $model) {
-            return $job->topic === $topic && $job->initialAi === $model;
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic, $model, $bot) {
+            return $job->topic === $topic && $job->initialAi === $model && $job->triggerBot === $bot;
         });
     }
 

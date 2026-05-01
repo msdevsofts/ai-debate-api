@@ -16,7 +16,7 @@ class StartDebateUseCase
         private readonly DiscordApiAdapter $discordAdapter
     ) {}
 
-    public function execute(string $topic, ?string $initialAi = null): string
+    public function execute(string $topic, ?string $initialAi = null, ?string $triggerBot = null): string
     {
         // 1. 先にセッションを作成してIDを取得する (チャンネルIDなどは後で更新)
         $session = new DebateSession(
