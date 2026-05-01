@@ -43,14 +43,14 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $difyAdapter->shouldReceive('chat')->with(
             $session->topic,
             $session->difyConversationId,
-            TargetAi::GEMMA,
+            TargetAi::GEMINI,
             $session->topic
         )->once()->andReturn([
             'answer' => 'AIの未来は明るいです。',
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMMA)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
