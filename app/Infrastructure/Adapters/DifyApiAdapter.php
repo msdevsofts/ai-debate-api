@@ -22,8 +22,8 @@ class DifyApiAdapter
     public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic): array
     {
         $response = Http::withToken($this->apiKey)
-            ->timeout(900)
-            ->connectTimeout(900)
+            ->timeout(1000)
+            ->connectTimeout(60)
             ->post("{$this->baseUrl}/chat-messages", [
                 'inputs' => [
                     'target_ai' => $targetAi->value,

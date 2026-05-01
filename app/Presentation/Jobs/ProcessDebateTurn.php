@@ -16,6 +16,16 @@ class ProcessDebateTurn implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * タイムアウト時間を設定 (Dify APIの応答待ち時間に合わせる)
+     */
+    public int $timeout = 1100;
+
+    /**
+     * リトライ回数を制限
+     */
+    public int $tries = 3;
+
     public function __construct(
         private readonly int $debateSessionId
     ) {}
