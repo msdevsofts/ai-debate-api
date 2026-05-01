@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\UseCases;
 
+use App\Domain\Enums\TargetAi;
 use App\Domain\Repositories\DebateSessionRepositoryInterface;
 use App\Infrastructure\Adapters\DifyApiAdapter;
 use App\Infrastructure\Adapters\DiscordApiAdapter;
@@ -58,6 +59,15 @@ class ProcessDebateTurnUseCase
 
             $this->repository->save($session);
 
+            // メンション検知による自律的ディベートの継続
+            $mentionedAi = $this->detectMentionedAi($content);
+
+            if ($mentionedAi && !$session->isCompleted()) {
+                // メンションされたAIがいれば、そのAIをターゲットにして10秒後に実行
+                ProcessDebateTurn::dispatch($session->id, $mentionedAi)->delay(now()->addSeconds(10));
+                return;
+            }
+
             // 次のターンをディスパッチ（3秒ディレイ） - メンション方式の場合は自動続行しないか検討が必要だが、
             // 「ローテーション方式から『メンション反応方式』にアップグレード」
             // とあるため、自動ローテーションは停止するのが自然。
@@ -90,5 +100,26 @@ class ProcessDebateTurnUseCase
 
             throw $e;
         }
+    }
+
+    /**
+     * メッセージ内容からメンションされているAIを特定する
+     */
+    private function detectMentionedAi(string $content): ?TargetAi
+    {
+        // <@ID> (Name) 形式を正規表現でスキャン
+        // 例: <@123456789> (Llama) や <@123456789> (Gemma)
+        if (preg_match('/<@([0-9]+)>\s*\((Gemma|Phi|Llama|Gemini)\)/i', $content, $matches)) {
+            $name = strtolower($matches[2]);
+            return match ($name) {
+                'gemma' => TargetAi::GEMMA,
+                'phi' => TargetAi::PHI,
+                'llama' => TargetAi::LLAMA,
+                'gemini' => TargetAi::GEMINI,
+                default => null,
+            };
+        }
+
+        return null;
     }
 }

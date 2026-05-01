@@ -30,10 +30,10 @@ class ProcessDebateTurn implements ShouldQueue
     public ?TargetAi $targetAi = null;
 
     public function __construct(
-        private readonly int $debateSessionId,
+        public readonly int $debateSessionId,
         ?TargetAi $targetAi = null,
-        private readonly ?string $query = null,
-        private readonly ?string $replyToMessageId = null
+        public readonly ?string $query = null,
+        public readonly ?string $replyToMessageId = null
     ) {
         $this->targetAi = $targetAi;
     }

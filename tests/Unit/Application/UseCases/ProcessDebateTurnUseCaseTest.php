@@ -108,4 +108,48 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $this->assertTrue($session->isCompleted());
         Queue::assertNotPushed(ProcessDebateTurn::class);
     }
+
+    public function test_execute_dispatches_next_turn_with_mentioned_ai(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        $answerWithMention = "次の意見を聞きましょう。<@123456789> (Llama) どう思いますか？";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        $useCase->execute($sessionId);
+
+        // Assert
+        // メンションされたAI (Llama) をターゲットとしてジョブがディスパッチされていることを確認
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::LLAMA;
+        });
+    }
 }
