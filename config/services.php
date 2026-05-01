@@ -42,6 +42,12 @@ return [
 
     'discord' => [
         'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'bot_tokens' => [
+            'gemini' => env('DISCORD_BOT_TOKEN_GEMINI'),
+            'llama' => env('DISCORD_BOT_TOKEN_LLAMA'),
+            'gemma' => env('DISCORD_BOT_TOKEN_GEMMA'),
+            'phi' => env('DISCORD_BOT_TOKEN_PHI'),
+        ],
         'guild_id' => env('DISCORD_GUILD_ID'),
         'channel_id' => env('DISCORD_CHANNEL_ID'),
         'webhook_url' => env('DISCORD_WEBHOOK_URL'),
@@ -51,6 +57,12 @@ return [
             'llama' => env('DISCORD_PUBLIC_KEY_LLAMA'),
             'gemma' => env('DISCORD_PUBLIC_KEY_GEMMA'),
             'phi' => env('DISCORD_PUBLIC_KEY_PHI'),
+        ],
+        'bot_ids' => [
+            env('DISCORD_BOT_ID_GEMINI') => 'gemini',
+            env('DISCORD_BOT_ID_LLAMA') => 'llama',
+            env('DISCORD_BOT_ID_GEMMA') => 'gemma',
+            env('DISCORD_BOT_ID_PHI') => 'phi',
         ],
     ],
 

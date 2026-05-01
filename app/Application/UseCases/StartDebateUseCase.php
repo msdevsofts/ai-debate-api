@@ -24,7 +24,7 @@ class StartDebateUseCase
             topic: $topic,
             initialAi: $initialAi ? \App\Domain\Enums\TargetAi::tryFrom($initialAi) : null,
             discordChannelId: null,
-            discordWebhookUrl: null,
+            discordWebhookUrl: null, // Webhookは廃止するが、互換性のためにnullのまま保持
             currentTurn: 0,
             maxTurns: 10,
             difyConversationId: null,
@@ -36,15 +36,11 @@ class StartDebateUseCase
         // 2. Discord チャンネル作成 (IDを含める)
         $channelId = $this->discordAdapter->createChannel($topic, $session->id);
 
-        // 3. Discord Webhook 作成
-        $webhookUrl = $this->discordAdapter->createWebhook($channelId);
-
-        // 4. セッション情報を更新
+        // 3. セッション情報を更新
         $session->discordChannelId = $channelId;
-        $session->discordWebhookUrl = $webhookUrl;
         $this->repository->save($session);
 
-        // 5. 非同期Jobディスパッチ
+        // 4. 非同期Jobディスパッチ
         ProcessDebateTurn::dispatch($session->id);
 
         return $channelId;

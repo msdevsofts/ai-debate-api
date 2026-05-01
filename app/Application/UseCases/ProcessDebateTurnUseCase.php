@@ -45,9 +45,7 @@ class ProcessDebateTurnUseCase
 
             // Discordメッセージ投稿
             $content = $response['answer'] ?? '';
-            if ($session->discordWebhookUrl) {
-                $this->discordAdapter->postMessage($content, $session->discordWebhookUrl, $targetAi, $replyToMessageId);
-            }
+            $this->discordAdapter->postMessage($content, $session->discordChannelId, $targetAi, $replyToMessageId);
 
             // ターンをインクリメント
             $session->incrementTurn();
@@ -68,14 +66,8 @@ class ProcessDebateTurnUseCase
                 return;
             }
 
-            // 次のターンをディスパッチ（3秒ディレイ） - メンション方式の場合は自動続行しないか検討が必要だが、
-            // 「ローテーション方式から『メンション反応方式』にアップグレード」
-            // とあるため、自動ローテーションは停止するのが自然。
-            // メンションがない場合は従来の挙動、メンションがあった場合はそのAIのみが応答する形か。
-            // 要件1, 2, 3 を総合すると、メンション時に特定のAIをターゲットとして実行することが主眼。
-            // 自動ローテーションを継続するかどうかは明記されていないが、アップグレード（変更）なので、
-            // ここではメンションによる呼び出し時（$replyToMessageIdがある時など）は後続の自動ターンをスキップする。
-            if (!$session->isCompleted() && $replyToMessageId === null) {
+            // 次のターンをディスパッチ（3秒ディレイ） - メンション方式の場合は自動続行しない
+            if (!$session->isCompleted() && $replyToMessageId === null && $mentionedAi === null) {
                 ProcessDebateTurn::dispatch($session->id)->delay(now()->addSeconds(3));
             }
         } catch (\Exception $e) {
@@ -83,19 +75,17 @@ class ProcessDebateTurnUseCase
             $this->repository->save($session);
 
             // Discordチャンネルにエラーを通知
-            if ($session->discordWebhookUrl) {
-                try {
-                    $this->discordAdapter->postMessage(
-                        "⚠️ システムエラーが発生したため、議論を中断します。\nエラー内容: " . $e->getMessage(),
-                        $session->discordWebhookUrl,
-                        \App\Domain\Enums\TargetAi::GEMINI_CONCLUSION // エラー通知はシステム側（Gemini）として送信
-                    );
-                } catch (\Exception $discordEx) {
-                    // 通知自体の失敗はログに留める
-                    \Illuminate\Support\Facades\Log::error('Failed to notify error to Discord', [
-                        'error' => $discordEx->getMessage()
-                    ]);
-                }
+            try {
+                $this->discordAdapter->postMessage(
+                    "⚠️ システムエラーが発生したため、議論を中断します。\nエラー内容: " . $e->getMessage(),
+                    $session->discordChannelId,
+                    \App\Domain\Enums\TargetAi::GEMINI_CONCLUSION // エラー通知はシステム側（Gemini）として送信
+                );
+            } catch (\Exception $discordEx) {
+                // 通知自体の失敗はログに留める
+                \Illuminate\Support\Facades\Log::error('Failed to notify error to Discord', [
+                    'error' => $discordEx->getMessage()
+                ]);
             }
 
             throw $e;
@@ -107,8 +97,24 @@ class ProcessDebateTurnUseCase
      */
     private function detectMentionedAi(string $content): ?TargetAi
     {
-        // <@ID> (Name) 形式を正規表現でスキャン
-        // 例: <@123456789> (Llama) や <@123456789> (Gemma)
+        // 1. <@ID> 形式を正規表現でスキャン (configのマッピングを使用)
+        $botIds = config('services.discord.bot_ids', []);
+        if (preg_match_all('/<@([0-9]+)>/', $content, $matches)) {
+            foreach ($matches[1] as $mentionedId) {
+                if (isset($botIds[$mentionedId])) {
+                    $name = strtolower($botIds[$mentionedId]);
+                    return match ($name) {
+                        'gemma' => TargetAi::GEMMA,
+                        'phi' => TargetAi::PHI,
+                        'llama' => TargetAi::LLAMA,
+                        'gemini' => TargetAi::GEMINI,
+                        default => null,
+                    };
+                }
+            }
+        }
+
+        // 2. フォールバック: <@ID> (Name) 形式を正規表現でスキャン
         if (preg_match('/<@([0-9]+)>\s*\((Gemma|Phi|Llama|Gemini)\)/i', $content, $matches)) {
             $name = strtolower($matches[2]);
             return match ($name) {

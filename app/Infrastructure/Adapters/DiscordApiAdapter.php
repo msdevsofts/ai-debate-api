@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 class DiscordApiAdapter
 {
     private string $botToken;
+    private array $botTokens;
     private string $guildId;
     private string $channelId;
     private string $webhookUrl;
@@ -18,6 +19,7 @@ class DiscordApiAdapter
     public function __construct()
     {
         $this->botToken = config('services.discord.bot_token');
+        $this->botTokens = config('services.discord.bot_tokens', []);
         $this->guildId = config('services.discord.guild_id');
         $this->channelId = config('services.discord.channel_id');
         $this->webhookUrl = config('services.discord.webhook_url');
@@ -76,47 +78,41 @@ class DiscordApiAdapter
         return (string) $response->json('url');
     }
 
-    public function postMessage(string $content, string $webhookUrl, TargetAi $targetAi, ?string $replyToMessageId = null): void
+    public function postMessage(string $content, string $channelId, TargetAi $targetAi, ?string $replyToMessageId = null): void
     {
+        // ターゲットAIに応じたBotトークンを選択 (gemini_conclusionはgeminiトークンを使用)
+        $aiKey = match ($targetAi) {
+            TargetAi::GEMINI, TargetAi::GEMINI_CONCLUSION => 'gemini',
+            TargetAi::LLAMA => 'llama',
+            TargetAi::GEMMA => 'gemma',
+            TargetAi::PHI => 'phi',
+        };
+
+        $token = $this->botTokens[$aiKey] ?? $this->botToken;
+
         $payload = [
             'content' => $content,
-            'username' => $targetAi->getName(),
-            'avatar_url' => $targetAi->getAvatarUrl(),
         ];
 
-        // Webhookで返信（Reply）を行うための message_reference は、
-        // 実はWebhook単体では完全にはサポートされていない場合があるが、
-        // thread_id指定時と同様に query parameter で送るか、
-        // もしくは Bot API (v10) を使用する。
-        // 要件4は「message_referenceを使用して、元の発言に対して『返信（Reply）』の形で投稿」
-        // とあるが、Webhookでusername/avatarを上書きしつつ返信するには制限がある。
-        // Discord API v10の Webhook 実行 (Execute Webhook) では
-        // thread_id はあるが message_reference は標準の payload にはない。
-        // ただし、Bot API 経由で Webhook を実行する場合や、
-        // 特定の裏技（Allowed Mentions等）で通知を飛ばすことはできる。
-        // ここでは、要件に忠実に message_reference を payload に含める。
-        // (Discord側が公式にWebhookでのmessage_referenceをサポートし始めたか、
-        // もしくはBot APIによる投稿を意図している可能性がある)
-
         if ($replyToMessageId) {
-            // Webhook payload に message_reference を含める（非公式な拡張か、将来の対応を想定）
-            // もしくは、Bot API での送信に切り替える必要があるが、要件5で「Webhook送信時も...」
-            // とあるため、Webhookを使い続ける。
             $payload['message_reference'] = [
                 'message_id' => $replyToMessageId,
                 'fail_if_not_exists' => false,
             ];
         }
 
-        $response = Http::post($webhookUrl, $payload);
+        $response = Http::withHeaders([
+            'Authorization' => "Bot {$token}",
+        ])->post("https://discord.com/api/v10/channels/{$channelId}/messages", $payload);
 
         if ($response->failed()) {
-            Log::error('Discord Post Webhook Message Error', [
+            Log::error('Discord Post Message Error', [
                 'status' => $response->status(),
                 'body' => $response->body(),
-                'webhook_url' => $webhookUrl,
+                'channel_id' => $channelId,
+                'ai' => $targetAi->value,
             ]);
-            throw new \RuntimeException('Discord API post webhook message failed');
+            throw new \RuntimeException('Discord API post message failed');
         }
     }
 }

@@ -26,13 +26,10 @@ class StartDebateUseCaseTest extends TestCase
         $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
 
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
-        $discordAdapter->shouldReceive('createWebhook')->once()->with($channelId)->andReturn($webhookUrl);
 
-        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) use ($webhookUrl) {
+        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) {
             if ($session->id === null) {
                 $session->id = 1;
-            } else {
-                $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
             }
             return $session;
         });
@@ -59,14 +56,12 @@ class StartDebateUseCaseTest extends TestCase
         $initialAi = 'gemini';
 
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
-        $discordAdapter->shouldReceive('createWebhook')->once()->with($channelId)->andReturn($webhookUrl);
 
-        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) use ($initialAi, $webhookUrl) {
+        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) use ($initialAi) {
             if ($session->id === null) {
                 $session->id = 1;
             } else {
                 $this->assertEquals($initialAi, $session->initialAi->value);
-                $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
             }
             return $session;
         });

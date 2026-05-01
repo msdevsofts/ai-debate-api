@@ -50,7 +50,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI, null)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', '123456', TargetAi::GEMINI, null)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
@@ -96,7 +96,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('結論として...', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI_CONCLUSION, null)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('結論として...', '123456', TargetAi::GEMINI_CONCLUSION, null)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
@@ -107,6 +107,53 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         // Assert
         $this->assertTrue($session->isCompleted());
         Queue::assertNotPushed(ProcessDebateTurn::class);
+    }
+
+    public function test_execute_dispatches_next_turn_with_mentioned_ai_by_id(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        // configのモック
+        config(['services.discord.bot_ids' => ['999888777' => 'phi']]);
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        $answerWithMention = "次は <@999888777> さん、お願いします。";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        $useCase->execute($sessionId);
+
+        // Assert
+        // メンションされたAI (Phi) をターゲットとしてジョブがディスパッチされていることを確認
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::PHI;
+        });
     }
 
     public function test_execute_dispatches_next_turn_with_mentioned_ai(): void
