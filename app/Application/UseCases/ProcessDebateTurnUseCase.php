@@ -108,6 +108,7 @@ class ProcessDebateTurnUseCase
                         'phi' => TargetAi::PHI,
                         'llama' => TargetAi::LLAMA,
                         'gemini' => TargetAi::GEMINI,
+                        'gpt_oss_q2' => TargetAi::GPT_OSS_Q2,
                         default => null,
                     };
                 }
@@ -115,13 +116,14 @@ class ProcessDebateTurnUseCase
         }
 
         // 2. フォールバック: <@ID> (Name) 形式を正規表現でスキャン
-        if (preg_match('/<@([0-9]+)>\s*\((Gemma|Phi|Llama|Gemini)\)/i', $content, $matches)) {
+        if (preg_match('/<@([0-9]+)>\s*\((Gemma|Phi|Llama|Gemini|GPT-OSS-Q2)\)/i', $content, $matches)) {
             $name = strtolower($matches[2]);
             return match ($name) {
                 'gemma' => TargetAi::GEMMA,
                 'phi' => TargetAi::PHI,
                 'llama' => TargetAi::LLAMA,
                 'gemini' => TargetAi::GEMINI,
+                'gpt-oss-q2' => TargetAi::GPT_OSS_Q2,
                 default => null,
             };
         }

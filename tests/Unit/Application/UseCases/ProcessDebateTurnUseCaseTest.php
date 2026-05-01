@@ -199,4 +199,48 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::LLAMA;
         });
     }
+
+    public function test_execute_dispatches_next_turn_with_gpt_oss_q2_mention(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: '新しいAIモデルの導入',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 1,
+            maxTurns: 10,
+            difyConversationId: 'conv_123',
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        // GPT-OSS-Q2 へのメンションを含む回答
+        $answerWithMention = "興味深いですね。<@1499379253689716736> (GPT-OSS-Q2) さんはどう考えますか？";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        $useCase->execute($sessionId);
+
+        // Assert
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::GPT_OSS_Q2;
+        });
+    }
 }

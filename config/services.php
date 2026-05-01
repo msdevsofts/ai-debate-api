@@ -47,6 +47,7 @@ return [
             'llama' => env('DISCORD_BOT_TOKEN_LLAMA'),
             'gemma' => env('DISCORD_BOT_TOKEN_GEMMA'),
             'phi' => env('DISCORD_BOT_TOKEN_PHI'),
+            'gpt_oss_q2' => env('DISCORD_BOT_TOKEN_GPT_OSS_Q2'),
         ],
         'guild_id' => env('DISCORD_GUILD_ID'),
         'channel_id' => env('DISCORD_CHANNEL_ID'),
@@ -57,12 +58,14 @@ return [
             'llama' => env('DISCORD_PUBLIC_KEY_LLAMA'),
             'gemma' => env('DISCORD_PUBLIC_KEY_GEMMA'),
             'phi' => env('DISCORD_PUBLIC_KEY_PHI'),
+            'gpt_oss_q2' => env('DISCORD_PUBLIC_KEY_GPT_OSS_Q2'),
         ],
         'bot_ids' => [
             env('DISCORD_BOT_ID_GEMINI') => 'gemini',
             env('DISCORD_BOT_ID_LLAMA') => 'llama',
             env('DISCORD_BOT_ID_GEMMA') => 'gemma',
             env('DISCORD_BOT_ID_PHI') => 'phi',
+            env('DISCORD_BOT_ID_GPT_OSS_Q2') => 'gpt_oss_q2',
         ],
     ],
 

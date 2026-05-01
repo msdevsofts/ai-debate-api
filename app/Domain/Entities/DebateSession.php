@@ -31,8 +31,8 @@ class DebateSession
             return $this->initialAi;
         }
 
-        // 順番にAIを選択 (Gemini -> Gemma -> Phi -> Llama)
-        $aiSequence = [TargetAi::GEMINI, TargetAi::GEMMA, TargetAi::PHI, TargetAi::LLAMA];
+        // 順番にAIを選択 (Gemini -> Gemma -> Phi -> Llama -> GPT-OSS-Q2)
+        $aiSequence = [TargetAi::GEMINI, TargetAi::GEMMA, TargetAi::PHI, TargetAi::LLAMA, TargetAi::GPT_OSS_Q2];
 
         // initialAiがシーケンスに含まれる場合、そこからのオフセットを考慮するか、
         // 単純にシーケンスに従うか。今回は「geminiを指定して開始」が目的なので、

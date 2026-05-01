@@ -57,6 +57,8 @@ class DiscordMessageController extends Controller
             $targetAi = TargetAi::LLAMA;
         } elseif (stripos($content, '@Gemini') !== false) {
             $targetAi = TargetAi::GEMINI;
+        } elseif (stripos($content, '@GPT-OSS-Q2') !== false) {
+            $targetAi = TargetAi::GPT_OSS_Q2;
         }
 
         if ($targetAi === null) {
