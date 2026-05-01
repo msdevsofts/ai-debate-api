@@ -60,7 +60,10 @@ class DifyApiAdapter
             // インラインや行末の (think) マーカーを個別に削除
             $data['answer'] = preg_replace('/\(think\)/', '', $data['answer']);
 
-            // 3. 残った余計な改行や空白を整理
+            // 4. [ENDTHINKFLAG] までの内容を削除 (最後に出現するフラグまでを貪欲にマッチ)
+            $data['answer'] = preg_replace('/^.*\[ENDTHINKFLAG\]\s*/s', '', $data['answer']);
+
+            // 5. 残った余計な改行や空白を整理
             $data['answer'] = trim($data['answer']);
         }
 

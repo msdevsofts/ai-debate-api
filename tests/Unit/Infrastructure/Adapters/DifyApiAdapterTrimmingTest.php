@@ -145,4 +145,28 @@ EOD;
         $this->assertStringNotContainsString('</think>', $result['answer']);
         $this->assertStringContainsString('チャンネル化テスト4', $result['answer']);
     }
+
+    public function test_chat_trims_endthinkflag_successfully(): void
+    {
+        $input = <<<EOD
+Thinking process 1
+[ENDTHINKFLAG]
+Additional thinking process 2
+[ENDTHINKFLAG]
+
+Final clean response
+EOD;
+
+        Http::fake([
+            '*/chat-messages' => Http::response([
+                'answer' => $input,
+                'conversation_id' => 'conv_123'
+            ], 200)
+        ]);
+
+        $adapter = new DifyApiAdapter();
+        $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
+
+        $this->assertEquals('Final clean response', $result['answer']);
+    }
 }
