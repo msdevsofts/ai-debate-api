@@ -25,12 +25,15 @@ class StartDebateUseCaseTest extends TestCase
         $channelId = 'channel_123';
         $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
 
-        $discordAdapter->shouldReceive('createChannel')->once()->with($topic)->andReturn($channelId);
+        $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
         $discordAdapter->shouldReceive('createWebhook')->once()->with($channelId)->andReturn($webhookUrl);
 
-        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) use ($webhookUrl) {
-            $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
-            $session->id = 1;
+        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) use ($webhookUrl) {
+            if ($session->id === null) {
+                $session->id = 1;
+            } else {
+                $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
+            }
             return $session;
         });
 
@@ -55,13 +58,16 @@ class StartDebateUseCaseTest extends TestCase
         $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
         $initialAi = 'gemini';
 
-        $discordAdapter->shouldReceive('createChannel')->once()->with($topic)->andReturn($channelId);
+        $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
         $discordAdapter->shouldReceive('createWebhook')->once()->with($channelId)->andReturn($webhookUrl);
 
-        $repository->shouldReceive('save')->once()->andReturnUsing(function (DebateSession $session) use ($initialAi, $webhookUrl) {
-            $this->assertEquals($initialAi, $session->initialAi->value);
-            $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
-            $session->id = 1;
+        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) use ($initialAi, $webhookUrl) {
+            if ($session->id === null) {
+                $session->id = 1;
+            } else {
+                $this->assertEquals($initialAi, $session->initialAi->value);
+                $this->assertEquals($webhookUrl, $session->discordWebhookUrl);
+            }
             return $session;
         });
 

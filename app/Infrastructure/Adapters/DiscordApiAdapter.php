@@ -23,15 +23,18 @@ class DiscordApiAdapter
         $this->webhookUrl = config('services.discord.webhook_url');
     }
 
-    public function createChannel(string $topic): string
+    public function createChannel(string $topic, int $sessionId): string
     {
         // チャンネル名のサニタイズ (Str::slug を使用し、Discordの命名規則に合わせる)
-        $name = \Illuminate\Support\Str::slug($topic);
-        $name = mb_substr($name, 0, 100);
+        $slug = \Illuminate\Support\Str::slug($topic);
+        $prefix = 'debate-';
+        $suffix = '-' . $sessionId;
 
-        if (empty($name)) {
-            $name = 'debate-channel';
-        }
+        // 全体で100文字以内にする。プレフィックスとサフィックスを除いた長さを計算
+        $maxSlugLength = 100 - strlen($prefix) - strlen($suffix);
+        $shortSlug = mb_substr($slug, 0, $maxSlugLength);
+
+        $name = $prefix . $shortSlug . $suffix;
 
         $response = Http::withHeaders([
             'Authorization' => "Bot {$this->botToken}",
