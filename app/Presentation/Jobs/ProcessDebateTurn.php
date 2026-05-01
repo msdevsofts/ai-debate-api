@@ -27,13 +27,16 @@ class ProcessDebateTurn implements ShouldQueue
     public int $tries = 3;
 
     public function __construct(
-        private readonly int $debateSessionId
+        private readonly int $debateSessionId,
+        private readonly ?\App\Domain\Enums\TargetAi $targetAi = null,
+        private readonly ?string $query = null,
+        private readonly ?string $replyToMessageId = null
     ) {}
 
     public function handle(ProcessDebateTurnUseCase $useCase): void
     {
         try {
-            $useCase->execute($this->debateSessionId);
+            $useCase->execute($this->debateSessionId, $this->targetAi, $this->query, $this->replyToMessageId);
         } catch (\Exception $e) {
             Log::error('ProcessDebateTurn Job Failed', [
                 'session_id' => $this->debateSessionId,

@@ -9,5 +9,6 @@ use App\Domain\Entities\DebateSession;
 interface DebateSessionRepositoryInterface
 {
     public function findById(int $id): ?DebateSession;
+    public function findByDiscordChannelId(string $discordChannelId): ?DebateSession;
     public function save(DebateSession $session): DebateSession;
 }

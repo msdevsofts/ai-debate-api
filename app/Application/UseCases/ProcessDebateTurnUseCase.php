@@ -17,20 +17,21 @@ class ProcessDebateTurnUseCase
         private readonly DiscordApiAdapter $discordAdapter
     ) {}
 
-    public function execute(int $sessionId): void
+    public function execute(int $sessionId, ?TargetAi $targetAi = null, ?string $query = null, ?string $replyToMessageId = null): void
     {
         $session = $this->repository->findById($sessionId);
         if (!$session || $session->isCompleted()) {
             return;
         }
 
-        // 次の発言AIを決定
-        $targetAi = $session->getNextAi();
+        // 次の発言AIを決定 (引数で指定されていればそれを使用、そうでなければローテーション)
+        $targetAi = $targetAi ?? $session->getNextAi();
+        $query = $query ?? $session->topic;
 
         try {
             // Dify API呼び出し
             $response = $this->difyAdapter->chat(
-                $session->topic,
+                $query,
                 $session->difyConversationId,
                 $targetAi,
                 $session->topic
@@ -44,7 +45,7 @@ class ProcessDebateTurnUseCase
             // Discordメッセージ投稿
             $content = $response['answer'] ?? '';
             if ($session->discordWebhookUrl) {
-                $this->discordAdapter->postMessage($content, $session->discordWebhookUrl, $targetAi);
+                $this->discordAdapter->postMessage($content, $session->discordWebhookUrl, $targetAi, $replyToMessageId);
             }
 
             // ターンをインクリメント
@@ -57,8 +58,14 @@ class ProcessDebateTurnUseCase
 
             $this->repository->save($session);
 
-            // 次のターンをディスパッチ（3秒ディレイ）
-            if (!$session->isCompleted()) {
+            // 次のターンをディスパッチ（3秒ディレイ） - メンション方式の場合は自動続行しないか検討が必要だが、
+            // 「ローテーション方式から『メンション反応方式』にアップグレード」
+            // とあるため、自動ローテーションは停止するのが自然。
+            // メンションがない場合は従来の挙動、メンションがあった場合はそのAIのみが応答する形か。
+            // 要件1, 2, 3 を総合すると、メンション時に特定のAIをターゲットとして実行することが主眼。
+            // 自動ローテーションを継続するかどうかは明記されていないが、アップグレード（変更）なので、
+            // ここではメンションによる呼び出し時（$replyToMessageIdがある時など）は後続の自動ターンをスキップする。
+            if (!$session->isCompleted() && $replyToMessageId === null) {
                 ProcessDebateTurn::dispatch($session->id)->delay(now()->addSeconds(3));
             }
         } catch (\Exception $e) {

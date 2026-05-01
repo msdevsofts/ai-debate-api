@@ -50,7 +50,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI, null)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
@@ -96,7 +96,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('結論として...', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI_CONCLUSION)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('結論として...', 'https://discord.com/api/webhooks/123/abc', TargetAi::GEMINI_CONCLUSION, null)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);

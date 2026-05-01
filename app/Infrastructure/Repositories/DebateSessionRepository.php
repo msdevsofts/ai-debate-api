@@ -21,6 +21,16 @@ class DebateSessionRepository implements DebateSessionRepositoryInterface
         return $this->toEntity($model);
     }
 
+    public function findByDiscordChannelId(string $discordChannelId): ?DebateSession
+    {
+        $model = DebateSessionModel::where('discord_channel_id', $discordChannelId)->first();
+        if (!$model) {
+            return null;
+        }
+
+        return $this->toEntity($model);
+    }
+
     public function save(DebateSession $session): DebateSession
     {
         $model = DebateSessionModel::updateOrCreate(
