@@ -51,12 +51,10 @@ class DifyApiAdapter
             $data['answer'] = preg_replace('/<(think|thought)>.*?<\/\1>/s', '', $data['answer']);
 
             // 2. (think) 形式を削除
-            // (think) で始まり、その後のテキストを削除する。
-            // 多くのAIは (think) 形式の思考プロセスの後に2つの改行を入れて本文を開始するため、
-            // それを区切りとして利用する。
-            $data['answer'] = preg_replace('/\(think\).*?(\n\n|$)/s', '', $data['answer']);
-            // もし改行が1つしかない場合でも、(think) で始まる行は削除する
-            $data['answer'] = preg_replace('/^\(think\).*?$/m', '', $data['answer']);
+            // (think) で始まり、その後の内容を、2つの連続する改行、または次のタグの開始まで削除
+            $data['answer'] = preg_replace('/\(think\).*?(\n\n|(?=<)|$)/s', '', $data['answer']);
+            // インラインや行末の (think) マーカーを個別に削除
+            $data['answer'] = preg_replace('/\(think\)/', '', $data['answer']);
 
             // 3. 残った余計な改行や空白を整理
             $data['answer'] = trim($data['answer']);

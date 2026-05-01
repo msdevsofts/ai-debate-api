@@ -49,7 +49,7 @@ class DifyApiAdapterTrimmingTest extends TestCase
     {
         Http::fake([
             '*/chat-messages' => Http::response([
-                'answer' => "(think) I am thinking\nActual answer here",
+                'answer' => "(think) I am thinking\n\nActual answer here",
                 'conversation_id' => 'conv_123'
             ], 200)
         ]);
@@ -80,7 +80,7 @@ class DifyApiAdapterTrimmingTest extends TestCase
     {
         Http::fake([
             '*/chat-messages' => Http::response([
-                'answer' => "<think>Initial thoughts</think>\n(think) Additional thoughts\nFinal conclusion",
+                'answer' => "<think>Initial thoughts</think>\n\n(think) Additional thoughts\n\nFinal conclusion",
                 'conversation_id' => 'conv_123'
             ], 200)
         ]);
