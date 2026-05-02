@@ -13,6 +13,44 @@ enum TargetAi: string
     case GEMINI_CONCLUSION = 'gemini_conclusion';
     case GPT_OSS_Q2 = 'gpt_oss_q2';
 
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::GEMMA => '@Gemma',
+            self::PHI => '@Phi',
+            self::LLAMA => '@Llama',
+            self::GEMINI, self::GEMINI_CONCLUSION => '@Gemini',
+            self::GPT_OSS_Q2 => '@GPT-OSS-Q2',
+        };
+    }
+
+    public static function fromMention(string $content): ?self
+    {
+        foreach (self::cases() as $case) {
+            if (stripos($content, $case->getLabel()) !== false) {
+                return $case;
+            }
+        }
+        return null;
+    }
+
+    public static function fromBotId(string $botId): ?self
+    {
+        $botIds = config('services.discord.bot_ids', []);
+        if (isset($botIds[$botId])) {
+            $name = strtolower($botIds[$botId]);
+            return match ($name) {
+                'gemma' => self::GEMMA,
+                'phi' => self::PHI,
+                'llama' => self::LLAMA,
+                'gemini' => self::GEMINI,
+                'gpt_oss_q2', 'gpt-oss-q2' => self::GPT_OSS_Q2,
+                default => null,
+            };
+        }
+        return null;
+    }
+
     public function getName(): string
     {
         return match ($this) {
