@@ -58,17 +58,11 @@ class ProcessDebateTurnUseCase
             $this->repository->save($session);
 
             // メンション検知による自律的ディベートの継続
-            $mentionedAi = $this->detectMentionedAi($content);
+            $targetAi = $this->extractNextAi($content);
 
-            if ($mentionedAi && !$session->isCompleted()) {
+            if ($targetAi && !$session->isCompleted()) {
                 // メンションされたAIがいれば、そのAIをターゲットにして10秒後に実行
-                ProcessDebateTurn::dispatch($session->id, $mentionedAi)->delay(now()->addSeconds(10));
-                return;
-            }
-
-            // 次のターンをディスパッチ（3秒ディレイ） - メンション方式の場合は自動続行しない
-            if (!$session->isCompleted() && $replyToMessageId === null && $mentionedAi === null) {
-                ProcessDebateTurn::dispatch($session->id)->delay(now()->addSeconds(3));
+                ProcessDebateTurn::dispatch($session->id, $targetAi)->delay(now()->addSeconds(10));
             }
         } catch (\Exception $e) {
             $session->fail();
@@ -93,25 +87,29 @@ class ProcessDebateTurnUseCase
     }
 
     /**
-     * メッセージ内容からメンションされているAIを特定する
+     * メッセージ内容からメンションを抽出し、次に発言すべきAIを特定する
      */
-    private function detectMentionedAi(string $content): ?TargetAi
+    private function extractNextAi(string $content): ?TargetAi
     {
-        // 1. <@ID> 形式を正規表現でスキャン
-        if (preg_match_all('/<@([0-9]+)>/', $content, $matches)) {
-            foreach ($matches[1] as $mentionedId) {
-                if ($target = TargetAi::fromBotId($mentionedId)) {
-                    return $target;
-                }
-            }
+        // 1. <@ID> 形式を正規表現ですべて抽出
+        if (!preg_match_all('/<@(\d+)>/', $content, $matches)) {
+            \Log::info('メンションが含まれていないため、次ターンのジョブをディスパッチせずに終了します。');
+            return null;
         }
 
-        // 2. フォールバック: <@ID> (Name) 形式を正規表現でスキャン
-        if (preg_match('/<@([0-9]+)>\s*\((Gemma|Phi|Llama|Gemini|GPT-OSS-Q2)\)/i', $content, $matches)) {
-            $name = strtolower(str_replace('-', '_', $matches[2]));
-            return TargetAi::tryFrom($name);
+        $mentionedIds = $matches[1];
+
+        // 2. 抽出したIDリストの「最初の1つ」をターゲットとする（要件：最初または最後）
+        $targetId = $mentionedIds[0];
+
+        // 3. マッピング配列（TargetAi::fromBotId 内で config 経由で取得）を使用してAIを特定
+        $targetAi = TargetAi::fromBotId($targetId);
+
+        if ($targetAi === null) {
+            \Log::info("マッピングに存在しないID（{$targetId}）のため、次ターンのジョブをディスパッチせずに終了します。");
+            return null;
         }
 
-        return null;
+        return $targetAi;
     }
 }

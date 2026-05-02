@@ -22,6 +22,7 @@ class VerifyDiscordSignature
         $signature = $request->header('X-Signature-Ed25519');
         $timestamp = $request->header('X-Signature-Timestamp');
         $body = $request->getContent();
+        Log::info('bot type: ' . $bot);
 
         // 1. 環境変数キーの生成 (例: gpt-oss-q2 -> DISCORD_PUBLIC_KEY_GPT_OSS_Q2)
         $envSuffix = strtoupper(str_replace('-', '_', (string)$bot));

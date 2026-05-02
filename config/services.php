@@ -43,6 +43,7 @@ return [
     'discord' => [
         'bot_token' => env('DISCORD_BOT_TOKEN'),
         'bot_tokens' => [
+            'ai_debate' => env('DISCORD_BOT_TOKEN_AI_DEBATE'),
             'gemini' => env('DISCORD_BOT_TOKEN_GEMINI'),
             'llama' => env('DISCORD_BOT_TOKEN_LLAMA'),
             'gemma' => env('DISCORD_BOT_TOKEN_GEMMA'),
@@ -54,6 +55,7 @@ return [
         'webhook_url' => env('DISCORD_WEBHOOK_URL'),
         'public_key' => env('DISCORD_PUBLIC_KEY'),
         'public_keys' => [
+            'ai_debate' => env('DISCORD_PUBLIC_KEY_AI_DEBATE'),
             'gemini' => env('DISCORD_PUBLIC_KEY_GEMINI'),
             'llama' => env('DISCORD_PUBLIC_KEY_LLAMA'),
             'gemma' => env('DISCORD_PUBLIC_KEY_GEMMA'),
@@ -61,11 +63,12 @@ return [
             'gpt_oss_q2' => env('DISCORD_PUBLIC_KEY_GPT_OSS_Q2'),
         ],
         'bot_ids' => [
-            env('DISCORD_BOT_ID_GEMINI') => 'gemini',
-            env('DISCORD_BOT_ID_LLAMA') => 'llama',
-            env('DISCORD_BOT_ID_GEMMA') => 'gemma',
-            env('DISCORD_BOT_ID_PHI') => 'phi',
-            env('DISCORD_BOT_ID_GPT_OSS_Q2') => 'gpt_oss_q2',
+            env('DISCORD_CLIENT_ID_AI_DEBATE') => 'ai_debate',
+            env('DISCORD_CLIENT_ID_GEMINI') => 'gemini',
+            env('DISCORD_CLIENT_ID_LLAMA') => 'llama',
+            env('DISCORD_CLIENT_ID_GEMMA') => 'gemma',
+            env('DISCORD_CLIENT_ID_PHI') => 'phi',
+            env('DISCORD_CLIENT_ID_GPT_OSS_Q2') => 'gpt_oss_q2',
         ],
     ],
 

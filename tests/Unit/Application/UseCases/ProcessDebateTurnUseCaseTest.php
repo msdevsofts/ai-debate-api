@@ -46,11 +46,13 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             TargetAi::GEMINI,
             $session->topic
         )->once()->andReturn([
-            'answer' => 'AIの未来は明るいです。',
+            'answer' => 'AIの未来は明るいです。 <@111>',
             'conversation_id' => 'conv_123'
         ]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。', '123456', TargetAi::GEMINI, null)->once();
+        config(['services.discord.bot_ids' => ['111' => 'phi']]);
+
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。 <@111>', '123456', TargetAi::GEMINI, null)->once();
         $repository->shouldReceive('save')->once();
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
@@ -156,7 +158,57 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         });
     }
 
-    public function test_execute_dispatches_next_turn_with_mentioned_ai(): void
+    public function test_execute_dispatches_next_turn_with_multiple_mentions_picks_first(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        // configのモック
+        config(['services.discord.bot_ids' => [
+            '111' => 'phi',
+            '222' => 'llama'
+        ]]);
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        $answerWithMultipleMentions = "次は <@111> さんと <@222> さん、お願いします。";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithMultipleMentions,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        $useCase->execute($sessionId);
+
+        // Assert
+        // 最初のメンションされたAI (Phi) をターゲットとしてジョブがディスパッチされていることを確認
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::PHI;
+        });
+    }
+
+    public function test_execute_ends_when_no_mentions(): void
     {
         // Mocking
         $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
@@ -179,9 +231,9 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
-        $answerWithMention = "次の意見を聞きましょう。<@123456789> (Llama) どう思いますか？";
+        $answerWithoutMention = "以上で私の意見を終わります。";
         $difyAdapter->shouldReceive('chat')->andReturn([
-            'answer' => $answerWithMention,
+            'answer' => $answerWithoutMention,
             'conversation_id' => 'conv_123'
         ]);
 
@@ -194,13 +246,10 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $useCase->execute($sessionId);
 
         // Assert
-        // メンションされたAI (Llama) をターゲットとしてジョブがディスパッチされていることを確認
-        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
-            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::LLAMA;
-        });
+        Queue::assertNotPushed(ProcessDebateTurn::class);
     }
 
-    public function test_execute_dispatches_next_turn_with_gpt_oss_q2_mention(): void
+    public function test_execute_ends_when_unmapped_id_mentioned(): void
     {
         // Mocking
         $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
@@ -208,25 +257,27 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
         Queue::fake();
 
+        // configのモック（999はマッピングにない）
+        config(['services.discord.bot_ids' => ['111' => 'phi']]);
+
         $sessionId = 1;
         $session = new DebateSession(
             id: $sessionId,
-            topic: '新しいAIモデルの導入',
+            topic: 'AIの未来について',
             initialAi: null,
             discordChannelId: '123456',
             discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
-            currentTurn: 1,
+            currentTurn: 0,
             maxTurns: 10,
-            difyConversationId: 'conv_123',
+            difyConversationId: null,
             status: 'running'
         );
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
-        // GPT-OSS-Q2 へのメンションを含む回答
-        $answerWithMention = "興味深いですね。<@1499379253689716736> (GPT-OSS-Q2) さんはどう考えますか？";
+        $answerWithUnmappedMention = "次は <@999> さん、お願いします。";
         $difyAdapter->shouldReceive('chat')->andReturn([
-            'answer' => $answerWithMention,
+            'answer' => $answerWithUnmappedMention,
             'conversation_id' => 'conv_123'
         ]);
 
@@ -239,8 +290,6 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $useCase->execute($sessionId);
 
         // Assert
-        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
-            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::GPT_OSS_Q2;
-        });
+        Queue::assertNotPushed(ProcessDebateTurn::class);
     }
 }
