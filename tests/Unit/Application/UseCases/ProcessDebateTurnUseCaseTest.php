@@ -208,13 +208,19 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         });
     }
 
-    public function test_execute_falls_back_to_gemini_when_no_mentions(): void
+    public function test_execute_falls_back_to_random_ai_when_no_mentions(): void
     {
         // Mocking
         $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
         $difyAdapter = Mockery::mock(DifyApiAdapter::class);
         $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
         Queue::fake();
+
+        // configのモック（PhiとLlamaを登録）
+        config(['services.discord.bot_ids' => [
+            '111' => 'phi',
+            '222' => 'llama'
+        ]]);
 
         $sessionId = 1;
         $session = new DebateSession(
@@ -232,6 +238,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
         $answerWithoutMention = "以上で私の意見を終わります。";
+        // 現在の発言者がPhiであると仮定
         $difyAdapter->shouldReceive('chat')->andReturn([
             'answer' => $answerWithoutMention,
             'conversation_id' => 'conv_123'
@@ -243,16 +250,17 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
 
         // Execute
-        $useCase->execute($sessionId);
+        // targetAiにPHIを指定して実行
+        $useCase->execute($sessionId, TargetAi::PHI);
 
         // Assert
-        // メンションがない場合、Geminiにフォールバックしてジョブがディスパッチされることを確認
+        // メンションがない場合、Phi以外のAI（Llama）がランダムに選択されることを確認
         Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
-            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::GEMINI;
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::LLAMA;
         });
     }
 
-    public function test_execute_ends_when_unmapped_id_mentioned(): void
+    public function test_execute_falls_back_to_random_ai_when_unmapped_id_mentioned(): void
     {
         // Mocking
         $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
@@ -260,8 +268,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
         Queue::fake();
 
-        // configのモック（999はマッピングにない）
-        config(['services.discord.bot_ids' => ['111' => 'phi']]);
+        // configのモック
+        config(['services.discord.bot_ids' => [
+            '111' => 'phi',
+            '222' => 'llama'
+        ]]);
 
         $sessionId = 1;
         $session = new DebateSession(
@@ -290,10 +301,13 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
 
         // Execute
-        $useCase->execute($sessionId);
+        $useCase->execute($sessionId, TargetAi::PHI);
 
         // Assert
-        Queue::assertNotPushed(ProcessDebateTurn::class);
+        // 未マッピングIDの場合も、Phi以外のAI（Llama）が選択されることを確認
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::LLAMA;
+        });
     }
     public function test_execute_dispatches_next_turn_with_nickname_mention(): void
     {

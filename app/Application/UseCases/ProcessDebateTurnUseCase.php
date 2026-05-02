@@ -58,11 +58,11 @@ class ProcessDebateTurnUseCase
             $this->repository->save($session);
 
             // メンション検知による自律的ディベートの継続
-            $targetAi = $this->extractNextAi($content);
+            $nextAi = $this->extractNextAi($content, $targetAi);
 
-            if ($targetAi && !$session->isCompleted()) {
+            if ($nextAi && !$session->isCompleted()) {
                 // メンションされたAIがいれば、そのAIをターゲットにして10秒後に実行
-                ProcessDebateTurn::dispatch($session->id, $targetAi)->delay(now()->addSeconds(10));
+                ProcessDebateTurn::dispatch($session->id, $nextAi)->delay(now()->addSeconds(10));
             }
         } catch (\Exception $e) {
             $session->fail();
@@ -89,30 +89,49 @@ class ProcessDebateTurnUseCase
     /**
      * メッセージ内容からメンションを抽出し、次に発言すべきAIを特定する
      */
-    private function extractNextAi(string $content): ?TargetAi
+    private function extractNextAi(string $content, TargetAi $currentAi): ?TargetAi
     {
         \Log::debug('Extracting mention from text', ['text' => $content]);
 
         // 1. <@ID> または <@!ID> 形式を正規表現ですべて抽出
-        if (!preg_match_all('/<@!?(\d+)>/', $content, $matches)) {
-            \Log::debug('Matched IDs', ['matches' => []]);
-            \Log::warning('No mention found in AI response. Fallback to Gemini.');
-            return TargetAi::GEMINI;
+        if (preg_match_all('/<@!?(\d+)>/', $content, $matches)) {
+            \Log::debug('Matched IDs', ['matches' => $matches]);
+            $mentionedIds = $matches[1];
+
+            // 2. 抽出したIDリストの「最初の1つ」をターゲットとする
+            $targetId = (string)$mentionedIds[0];
+
+            // 3. マッピング配列を使用してAIを特定
+            $targetAi = TargetAi::fromBotId($targetId);
+
+            if ($targetAi !== null) {
+                return $targetAi;
+            }
+
+            \Log::info("マッピングに存在しないID（{$targetId}）のため、フォールバック処理に移行します。");
         }
 
-        \Log::debug('Matched IDs', ['matches' => $matches]);
-        $mentionedIds = $matches[1];
+        // メンションが見つからなかった場合（フォールバック）
+        $botIds = config('services.discord.bot_ids', []);
+        $availableAis = [];
 
-        // 2. 抽出したIDリストの「最初の1つ」をターゲットとする
-        $targetId = (string)$mentionedIds[0];
+        foreach ($botIds as $id => $name) {
+            $ai = TargetAi::fromBotId((string)$id);
+            // 現在のAI（直前に発言したAI）を除外
+            if ($ai && $ai !== $currentAi && $ai !== TargetAi::GEMINI_CONCLUSION) {
+                $availableAis[] = $ai;
+            }
+        }
 
-        // 3. マッピング配列を使用してAIを特定
-        $targetAi = TargetAi::fromBotId($targetId);
-
-        if ($targetAi === null) {
-            \Log::info("マッピングに存在しないID（{$targetId}）のため、次ターンのジョブをディスパッチせずに終了します。");
+        if (empty($availableAis)) {
+            \Log::warning('No available AI found for fallback.');
             return null;
         }
+
+        // ランダムに1つを選択
+        $targetAi = $availableAis[array_rand($availableAis)];
+
+        \Log::info('No mention found. Randomly selected next AI: ' . $targetAi->value);
 
         return $targetAi;
     }
