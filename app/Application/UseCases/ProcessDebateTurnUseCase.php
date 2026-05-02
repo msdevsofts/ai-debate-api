@@ -112,12 +112,22 @@ class ProcessDebateTurnUseCase
         }
 
         // メンションが見つからなかった場合（フォールバック）
+
+        // 1. 現在の発言者が「Gemini（司会）」である場合：意図的な議論終了
+        if ($currentAi === TargetAi::GEMINI || $currentAi === TargetAi::GEMINI_CONCLUSION) {
+            \Log::info('Debate concluded by Gemini. Stopping the chain.');
+            return null;
+        }
+
+        // 2. 現在の発言者が「Gemini以外」である場合：メンション忘れのミスとしてフォールバック
+        \Log::warning('No mention found from participant. Random fallback triggered.');
+
         $botIds = config('services.discord.bot_ids', []);
         $availableAis = [];
 
         foreach ($botIds as $id => $name) {
             $ai = TargetAi::fromBotId((string)$id);
-            // 現在のAI（直前に発言したAI）を除外
+            // 現在のAI（直前に発言したAI）および司会用ステータスを除外
             if ($ai && $ai !== $currentAi && $ai !== TargetAi::GEMINI_CONCLUSION) {
                 $availableAis[] = $ai;
             }
@@ -131,7 +141,7 @@ class ProcessDebateTurnUseCase
         // ランダムに1つを選択
         $targetAi = $availableAis[array_rand($availableAis)];
 
-        \Log::info('No mention found. Randomly selected next AI: ' . $targetAi->value);
+        \Log::info('Randomly selected next AI: ' . $targetAi->value);
 
         return $targetAi;
     }

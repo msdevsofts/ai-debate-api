@@ -260,6 +260,50 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         });
     }
 
+    public function test_execute_stops_when_gemini_has_no_mentions(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        $answerWithoutMention = "議論を終了します。";
+        // 現在の発言者がGeminiであると仮定
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithoutMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        // targetAiにGEMINIを指定して実行
+        $useCase->execute($sessionId, TargetAi::GEMINI);
+
+        // Assert
+        // Geminiがメンションなしで発言した場合、次のジョブはディスパッチされないことを確認
+        Queue::assertNotPushed(ProcessDebateTurn::class);
+    }
+
     public function test_execute_falls_back_to_random_ai_when_unmapped_id_mentioned(): void
     {
         // Mocking
