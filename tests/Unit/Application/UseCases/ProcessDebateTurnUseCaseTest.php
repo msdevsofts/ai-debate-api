@@ -7,6 +7,7 @@ namespace Tests\Unit\Application\UseCases;
 use App\Application\UseCases\ProcessDebateTurnUseCase;
 use App\Domain\Entities\DebateSession;
 use App\Domain\Repositories\DebateSessionRepositoryInterface;
+use App\Domain\Services\DiscordMessageFormatter;
 use App\Infrastructure\Adapters\DifyApiAdapter;
 use App\Infrastructure\Adapters\DiscordApiAdapter;
 use App\Domain\Enums\TargetAi;
@@ -43,7 +44,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $difyAdapter->shouldReceive('chat')->with(
             $session->topic,
             $session->difyConversationId,
-            TargetAi::GEMINI,
+            Mockery::type(TargetAi::class),
             $session->topic
         )->once()->andReturn([
             'answer' => 'AIの未来は明るいです。 <@111>',
@@ -52,10 +53,14 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         config(['services.discord.bot_ids' => ['111' => 'phi']]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。 <@111>', '123456', TargetAi::GEMINI, null)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。 <@111>', '123456', TargetAi::GEMMA, null)->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
+        $formatter->shouldReceive('format')->andReturn('AIの未来は明るいです。 <@111>');
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId);
@@ -101,7 +106,10 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->with('結論として...', '123456', TargetAi::GEMINI_CONCLUSION, null)->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(null);
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId);
@@ -146,7 +154,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
+        $formatter->shouldReceive('format')->andReturn($answerWithMention);
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId);
@@ -196,7 +208,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
+        $formatter->shouldReceive('format')->andReturn($answerWithMultipleMentions);
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId);
@@ -247,7 +263,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::LLAMA);
+        $formatter->shouldReceive('format')->andReturn($answerWithoutMention . ' <@222>');
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         // targetAiにPHIを指定して実行
@@ -293,7 +313,10 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(null);
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         // targetAiにGEMINIを指定して実行
@@ -342,7 +365,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::LLAMA);
+        $formatter->shouldReceive('format')->andReturn('次は <@222> さん、お願いします。');
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId, TargetAi::PHI);
@@ -389,7 +416,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
+        $formatter->shouldReceive('format')->andReturn('次は <@999> さん、お願いします。');
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId);
@@ -441,7 +472,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->once();
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::LLAMA);
+        $formatter->shouldReceive('format')->andReturn('自分自身 <@222> に問いかけます。');
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId, TargetAi::PHI);
@@ -466,7 +501,8 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         // configのモック
         config(['services.discord.bot_ids' => [
             '111' => 'phi',
-            '222' => 'llama'
+            '222' => 'llama',
+            '333' => 'gemma'
         ]]);
 
         $sessionId = 1;
@@ -500,7 +536,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::LLAMA);
+        $formatter->shouldReceive('format')->andReturn($expectedContent);
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId, TargetAi::PHI);
@@ -553,7 +593,11 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $repository->shouldReceive('save')->once();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::LLAMA);
+        $formatter->shouldReceive('format')->andReturn($expectedContent);
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId, TargetAi::PHI);

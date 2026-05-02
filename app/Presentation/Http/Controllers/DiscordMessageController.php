@@ -20,17 +20,7 @@ class DiscordMessageController extends Controller
 
     public function handle(Request $request): JsonResponse
     {
-        // Discord Webhook からの MESSAGE_CREATE イベントを想定
-        // データ構造: { "event": "MESSAGE_CREATE", "data": { "author": { "bot": true/false }, "content": "...", "channel_id": "...", "id": "..." } }
-        $event = $request->input('event');
-        $data = $request->input('data');
-
-        // もし event キーがない場合、トップレベルの data を見る
-        if (!$data && $event) {
-            $data = $request->input('event.data');
-        } elseif (!$data) {
-            $data = $request->all();
-        }
+        $data = $this->extractMessageData($request);
 
         // 1. 送信者がBotである場合は無視
         if (($data['author']['bot'] ?? false) === true) {
@@ -61,8 +51,7 @@ class DiscordMessageController extends Controller
             $query = $content; // 人間の発言内容をそのままコンテキストに含める
         } else {
             // メンションがある場合は、そのメンション部分を除去してクエリとする
-            $query = preg_replace('/<@!?([0-9]+)>/', '', $content);
-            $query = trim($query);
+            $query = trim(preg_replace('/<@!?([0-9]+)>/', '', $content));
             if (empty($query)) {
                 $query = $session->topic;
             }
@@ -77,5 +66,19 @@ class DiscordMessageController extends Controller
         );
 
         return response()->json(['status' => 'ok']);
+    }
+
+    private function extractMessageData(Request $request): array
+    {
+        // Discord Webhook からの MESSAGE_CREATE イベントを想定
+        // データ構造: { "event": "MESSAGE_CREATE", "data": { ... } } または直接データ
+        $event = $request->input('event');
+        $data = $request->input('data');
+
+        if (!$data && $event) {
+            $data = $request->input('event.data');
+        }
+
+        return $data ?? $request->all();
     }
 }

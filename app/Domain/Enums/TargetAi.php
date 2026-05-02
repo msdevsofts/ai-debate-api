@@ -37,22 +37,20 @@ enum TargetAi: string
     public static function fromBotId(string $botId): ?self
     {
         $botIds = config('services.discord.bot_ids', []);
-        // 文字列として比較するために array_change_key_case は使えないが、
-        // 明示的に文字列キャストしてループするか、キーを文字列化してチェックする
-        foreach ($botIds as $id => $name) {
-            if ((string)$id === (string)$botId) {
-                $botName = strtolower((string)$name);
-                return match ($botName) {
-                    'gemma' => self::GEMMA,
-                    'phi' => self::PHI,
-                    'llama' => self::LLAMA,
-                    'gemini' => self::GEMINI,
-                    'gpt_oss_q2', 'gpt-oss-q2' => self::GPT_OSS_Q2,
-                    default => null,
-                };
-            }
+
+        $botName = $botIds[$botId] ?? null;
+        if ($botName === null) {
+            return null;
         }
-        return null;
+
+        return match (strtolower((string)$botName)) {
+            'gemma' => self::GEMMA,
+            'phi' => self::PHI,
+            'llama' => self::LLAMA,
+            'gemini' => self::GEMINI,
+            'gpt_oss_q2', 'gpt-oss-q2' => self::GPT_OSS_Q2,
+            default => null,
+        };
     }
 
     public function getName(): string

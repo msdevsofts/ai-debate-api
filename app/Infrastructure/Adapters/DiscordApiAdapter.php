@@ -15,6 +15,7 @@ class DiscordApiAdapter
     private string $guildId;
     private string $channelId;
     private string $webhookUrl;
+    private string $apiBaseUrl;
 
     public function __construct()
     {
@@ -23,6 +24,7 @@ class DiscordApiAdapter
         $this->guildId = config('services.discord.guild_id');
         $this->channelId = config('services.discord.channel_id');
         $this->webhookUrl = config('services.discord.webhook_url');
+        $this->apiBaseUrl = config('services.discord.api_base_url', 'https://discord.com/api/v10');
     }
 
     public function createChannel(string $topic, int $sessionId): string
@@ -40,18 +42,14 @@ class DiscordApiAdapter
 
         $response = Http::withHeaders([
             'Authorization' => "Bot {$this->botToken}",
-        ])->post("https://discord.com/api/v10/guilds/{$this->guildId}/channels", [
+        ])->post("{$this->apiBaseUrl}/guilds/{$this->guildId}/channels", [
             'name' => $name,
             'type' => 0, // GUILD_TEXT
             'topic' => $topic, // チャンネル説明欄に元のトピックをセット
         ]);
 
         if ($response->failed()) {
-            Log::error('Discord Create Channel Error', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-                'guild_id' => $this->guildId,
-            ]);
+            $this->logError('Discord Create Channel Error', $response, ['guild_id' => $this->guildId]);
             throw new \RuntimeException('Discord API create channel failed');
         }
 
@@ -62,16 +60,12 @@ class DiscordApiAdapter
     {
         $response = Http::withHeaders([
             'Authorization' => "Bot {$this->botToken}",
-        ])->post("https://discord.com/api/v10/channels/{$channelId}/webhooks", [
+        ])->post("{$this->apiBaseUrl}/channels/{$channelId}/webhooks", [
             'name' => 'Debate Webhook',
         ]);
 
         if ($response->failed()) {
-            Log::error('Discord Create Webhook Error', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-                'channel_id' => $channelId,
-            ]);
+            $this->logError('Discord Create Webhook Error', $response, ['channel_id' => $channelId]);
             throw new \RuntimeException('Discord API create webhook failed');
         }
 
@@ -104,12 +98,10 @@ class DiscordApiAdapter
 
         $response = Http::withHeaders([
             'Authorization' => "Bot {$token}",
-        ])->post("https://discord.com/api/v10/channels/{$channelId}/messages", $payload);
+        ])->post("{$this->apiBaseUrl}/channels/{$channelId}/messages", $payload);
 
         if ($response->failed()) {
-            Log::error('Discord Post Message Error', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+            $this->logError('Discord Post Message Error', $response, [
                 'channel_id' => $channelId,
                 'ai' => $targetAi->value,
             ]);
@@ -123,16 +115,25 @@ class DiscordApiAdapter
      */
     public function editOriginalInteractionResponse(string $applicationId, string $token, string $content): void
     {
-        $response = Http::patch("https://discord.com/api/v10/webhooks/{$applicationId}/{$token}/messages/@original", [
+        $response = Http::patch("{$this->apiBaseUrl}/webhooks/{$applicationId}/{$token}/messages/@original", [
             'content' => $content,
         ]);
 
         if ($response->failed()) {
-            Log::error('Discord Edit Interaction Error', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+            $this->logError('Discord Edit Interaction Error', $response, [
                 'application_id' => $applicationId,
             ]);
         }
+    }
+
+    /**
+     * エラーをログに出力する
+     */
+    private function logError(string $message, \Illuminate\Http\Client\Response $response, array $context = []): void
+    {
+        Log::error($message, array_merge([
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ], $context));
     }
 }

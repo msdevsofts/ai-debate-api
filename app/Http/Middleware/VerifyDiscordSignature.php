@@ -24,20 +24,13 @@ class VerifyDiscordSignature
         $body = $request->getContent();
         Log::info('bot type: ' . $bot);
 
-        // 1. 環境変数キーの生成 (例: gpt-oss-q2 -> DISCORD_PUBLIC_KEY_GPT_OSS_Q2)
-        $envSuffix = strtoupper(str_replace('-', '_', (string)$bot));
-        $envKey = "DISCORD_PUBLIC_KEY_{$envSuffix}";
-
-        // 2. 公開鍵の取得 (config 経由と env 直参照のフォールバック)
-        $publicKey = config("services.discord.{$bot}.public_key")
-            ?? config("services.discord.public_keys.{$bot}")
-            ?? env($envKey)
+        // 1. 公開鍵の取得 (config 経由)
+        $publicKey = config("services.discord.public_keys.{$bot}")
             ?? config('services.discord.public_key');
 
         // デバッグログ
         Log::info('VerifyDiscordSignature Debug', [
             'bot' => $bot,
-            'envKey' => $envKey,
             'publicKey_exists' => !empty($publicKey),
             'has_signature' => !empty($signature),
             'has_timestamp' => !empty($timestamp),
@@ -46,7 +39,6 @@ class VerifyDiscordSignature
         if (!$signature || !$timestamp || !$publicKey) {
             Log::error('Unauthorized: Missing signature, timestamp, or public key', [
                 'bot' => $bot,
-                'envKey' => $envKey,
                 'publicKey_exists' => !empty($publicKey)
             ]);
             abort(401, 'Invalid signature or missing key');
@@ -71,14 +63,14 @@ class VerifyDiscordSignature
                 );
 
                 if (!$isVerified) {
-                    Log::error('Invalid request signature', ['bot' => $bot, 'envKey' => $envKey]);
+                    Log::error('Invalid request signature', ['bot' => $bot]);
                     abort(401, 'Invalid signature');
                 }
             } else {
                 Log::warning('libsodium extension is not installed. Skipping strict signature verification.');
             }
         } catch (\Exception $e) {
-            Log::error('Signature verification error: ' . $e->getMessage(), ['bot' => $bot, 'envKey' => $envKey]);
+            Log::error('Signature verification error: ' . $e->getMessage(), ['bot' => $bot]);
             abort(401, 'Invalid signature format');
         }
 

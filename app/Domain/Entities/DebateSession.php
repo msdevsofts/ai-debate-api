@@ -31,17 +31,22 @@ class DebateSession
             return $this->initialAi;
         }
 
-        // 順番にAIを選択 (Gemini -> Gemma -> Phi -> Llama -> GPT-OSS-Q2)
-        $aiSequence = [TargetAi::GEMINI, TargetAi::GEMMA, TargetAi::PHI, TargetAi::LLAMA, TargetAi::GPT_OSS_Q2];
+        // 司会(Gemini)を除いた参加者のリスト
+        $participants = [
+            TargetAi::GEMMA,
+            TargetAi::PHI,
+            TargetAi::LLAMA,
+            TargetAi::GPT_OSS_Q2,
+        ];
 
-        // initialAiがシーケンスに含まれる場合、そこからのオフセットを考慮するか、
-        // 単純にシーケンスに従うか。今回は「geminiを指定して開始」が目的なので、
-        // 初回のみ指定に従い、次からは通常のシーケンスに戻るか、
-        // シーケンスを Gemini スタートにする。
-        // ここでは、初回のみ指定に従い、2ターン目以降はシーケンスに従うものとする。
-        // ただし、0ターン目が Gemini だった場合、1ターン目はシーケンスの[1]（Phi）から始めると自然。
+        // 1ターン目以降は参加者が順番に発言する
+        // (currentTurn - 1) % count($participants) で司会以外のAIをローテーション
+        $index = ($this->currentTurn - 1) % count($participants);
+        if ($index < 0) {
+            $index = 0;
+        }
 
-        return $aiSequence[$this->currentTurn % count($aiSequence)];
+        return $participants[$index];
     }
 
     public function incrementTurn(): void

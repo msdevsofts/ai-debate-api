@@ -16,33 +16,33 @@ class DiscordInteractionController extends Controller
         $bot = $request->query('bot');
         $type = $request->json('type');
 
-        \Log::info('Interaction received for bot: ' . $bot . ' (Type: ' . $type . ')', $request->all());
+        \Log::info("Interaction received for bot: {$bot} (Type: {$type})", $request->all());
 
-        // --- 1. PING イベントへの応答 (DiscordのURL認証に必須) ---
-        if ($type === 1) {
-            return response()->json(['type' => 1]);
+        return match ($type) {
+            1 => response()->json(['type' => 1]), // PING
+            2 => $this->handleApplicationCommand($request, (string)$bot), // APPLICATION_COMMAND
+            default => response()->json(['message' => 'Unknown interaction type'], 400),
+        };
+    }
+
+    private function handleApplicationCommand(Request $request, string $bot): JsonResponse
+    {
+        $data = $request->json('data');
+        if (($data['name'] ?? '') !== 'discuss') {
+            return response()->json(['message' => 'Unknown command'], 400);
         }
 
-        // --- 2. APPLICATION_COMMAND (Slash Command: type 2) ---
-        if ($type === 2) {
-            $data = $request->json('data');
-            if (($data['name'] ?? '') === 'discuss') {
-                $options = $data['options'] ?? [];
-                $topic = collect($options)->firstWhere('name', 'topic')['value'] ?? null;
-                $initialAi = collect($options)->firstWhere('name', 'model')['value'] ?? null;
-                $applicationId = $request->json('application_id');
-                $token = $request->json('token');
+        $options = $data['options'] ?? [];
+        $topic = collect($options)->firstWhere('name', 'topic')['value'] ?? null;
+        $initialAi = collect($options)->firstWhere('name', 'model')['value'] ?? null;
+        $applicationId = $request->json('application_id');
+        $token = $request->json('token');
 
-                // 非同期Jobをディスパッチして即座にDEFERREDを返す
-                StartDebateJob::dispatch($topic, $initialAi, $bot, $applicationId, $token);
+        // 非同期Jobをディスパッチして即座にDEFERREDを返す
+        StartDebateJob::dispatch($topic, $initialAi, $bot, $applicationId, $token);
 
-                return response()->json([
-                    'type' => 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
-                ]);
-            }
-        }
-
-        // --- 4. それ以外のInteractionタイプ ---
-        return response()->json(['message' => 'Unknown interaction type'], 400);
+        return response()->json([
+            'type' => 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+        ]);
     }
 }

@@ -6,6 +6,7 @@ namespace App\Application\UseCases;
 
 use App\Domain\Enums\TargetAi;
 use App\Domain\Repositories\DebateSessionRepositoryInterface;
+use App\Domain\Services\DiscordMessageFormatter;
 use App\Infrastructure\Adapters\DifyApiAdapter;
 use App\Infrastructure\Adapters\DiscordApiAdapter;
 use App\Presentation\Jobs\ProcessDebateTurn;
@@ -15,7 +16,8 @@ class ProcessDebateTurnUseCase
     public function __construct(
         private readonly DebateSessionRepositoryInterface $repository,
         private readonly DifyApiAdapter $difyAdapter,
-        private readonly DiscordApiAdapter $discordAdapter
+        private readonly DiscordApiAdapter $discordAdapter,
+        private readonly DiscordMessageFormatter $messageFormatter
     ) {}
 
     public function execute(int $sessionId, ?TargetAi $targetAi = null, ?string $query = null, ?string $replyToMessageId = null): void
@@ -45,33 +47,12 @@ class ProcessDebateTurnUseCase
 
             $content = $response['answer'] ?? '';
 
-            // メンション検知と次発言者の決定を先に行う
-            $nextAi = $this->extractNextAi($content, $targetAi);
+            // メンション検知と次発言者の決定
+            $nextAi = $this->messageFormatter->extractNextAi($content, $targetAi);
 
             // Discordメッセージのテキスト書き換え（メンションの同期）
-            if ($nextAi && $nextAi !== TargetAi::GEMINI_CONCLUSION) {
-                $nextBotId = $nextAi->getBotId();
-                if ($nextBotId) {
-                    $newMention = "<@{$nextBotId}>";
-
-                    // 1. テキスト内に何らかのメンションタグ（ <@\d+> または <@!\d+> ）が存在する場合、すべて置換
-                    if (preg_match('/<@!?\d+>/', $content)) {
-                        $content = preg_replace('/<@!?\d+>/', $newMention, $content);
-                    } else {
-                        // 2. メンションタグが全く無かった場合は、末尾に追記
-                        $content .= " {$newMention}";
-                    }
-
-                    // 3. （オプション）名前の残骸（@Name, (Name)）を除去
-                    foreach (TargetAi::cases() as $case) {
-                        $name = $case->getName();
-                        // 「@Name」や「(Name)」を正規表現で除去（大文字小文字を区別しない）
-                        $content = preg_replace("/@{$name}/i", '', $content);
-                        $content = preg_replace("/\({$name}\)/i", '', $content);
-                    }
-                    // 余分な空白を整理
-                    $content = trim(preg_replace('/\s+/', ' ', $content));
-                }
+            if ($nextAi) {
+                $content = $this->messageFormatter->format($content, $nextAi);
             }
 
             // Discordメッセージ投稿
@@ -111,80 +92,5 @@ class ProcessDebateTurnUseCase
 
             throw $e;
         }
-    }
-
-    /**
-     * メッセージ内容からメンションを抽出し、次に発言すべきAIを特定する
-     */
-    private function extractNextAi(string $content, TargetAi $currentAi): ?TargetAi
-    {
-        \Log::debug('Extracting mention from text', ['text' => $content]);
-
-        $targetAi = null;
-
-        // 1. <@ID> または <@!ID> 形式を正規表現ですべて抽出
-        if (preg_match_all('/<@!?(\d+)>/', $content, $matches)) {
-            \Log::debug('Matched IDs', ['matches' => $matches]);
-            $mentionedIds = $matches[1];
-
-            // 2. 抽出したIDリストの「最初の1つ」をターゲットとする
-            $targetId = (string)$mentionedIds[0];
-
-            // 3. マッピング配列を使用してAIを特定
-            $targetAi = TargetAi::fromBotId($targetId);
-
-            // 【追加要件】自己メンションのチェック
-            if ($targetAi !== null && $targetAi === $currentAi) {
-                \Log::warning('AI mentioned itself. Blocking self-loop and triggering random fallback.', [
-                    'bot_id' => $targetId,
-                    'ai' => $targetAi->value
-                ]);
-                $targetAi = null; // メンションを無効化してフォールバックへ
-            }
-
-            if ($targetAi !== null) {
-                return $targetAi;
-            }
-
-            if ($targetAi === null && empty($matches[0])) {
-                 // ここには来ないはずだが、念のため
-            } else {
-                \Log::info("有効なメンションが見つからなかったため、フォールバック処理に移行します。");
-            }
-        }
-
-        // メンションが見つからなかった、または自己メンションで無効化された場合（フォールバック）
-
-        // 1. 現在の発言者が「Gemini（司会）」である場合：意図的な議論終了
-        if ($currentAi === TargetAi::GEMINI || $currentAi === TargetAi::GEMINI_CONCLUSION) {
-            \Log::info('Debate concluded by Gemini. Stopping the chain.');
-            return null;
-        }
-
-        // 2. 現在の発言者が「Gemini以外」である場合：メンション忘れ、または自己メンション回避のためのフォールバック
-        \Log::warning('No valid mention found from participant. Random fallback triggered.');
-
-        $botIds = config('services.discord.bot_ids', []);
-        $availableAis = [];
-
-        foreach ($botIds as $id => $name) {
-            $ai = TargetAi::fromBotId((string)$id);
-            // 現在のAI（自分自身）および司会用ステータス（Gemini関連）を除外
-            if ($ai && $ai !== $currentAi && $ai !== TargetAi::GEMINI && $ai !== TargetAi::GEMINI_CONCLUSION) {
-                $availableAis[] = $ai;
-            }
-        }
-
-        if (empty($availableAis)) {
-            \Log::warning('No available AI found for fallback.');
-            return null;
-        }
-
-        // ランダムに1つを選択
-        $targetAi = $availableAis[array_rand($availableAis)];
-
-        \Log::info('Randomly selected next AI: ' . $targetAi->value);
-
-        return $targetAi;
     }
 }
