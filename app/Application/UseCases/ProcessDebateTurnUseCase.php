@@ -91,18 +91,22 @@ class ProcessDebateTurnUseCase
      */
     private function extractNextAi(string $content): ?TargetAi
     {
-        // 1. <@ID> 形式を正規表現ですべて抽出
-        if (!preg_match_all('/<@(\d+)>/', $content, $matches)) {
+        \Log::debug('Extracting mention from text', ['text' => $content]);
+
+        // 1. <@ID> または <@!ID> 形式を正規表現ですべて抽出
+        if (!preg_match_all('/<@!?(\d+)>/', $content, $matches)) {
+            \Log::debug('Matched IDs', ['matches' => []]);
             \Log::warning('No mention found in AI response. Fallback to Gemini.');
             return TargetAi::GEMINI;
         }
 
+        \Log::debug('Matched IDs', ['matches' => $matches]);
         $mentionedIds = $matches[1];
 
-        // 2. 抽出したIDリストの「最初の1つ」をターゲットとする（要件：最初または最後）
-        $targetId = $mentionedIds[0];
+        // 2. 抽出したIDリストの「最初の1つ」をターゲットとする
+        $targetId = (string)$mentionedIds[0];
 
-        // 3. マッピング配列（TargetAi::fromBotId 内で config 経由で取得）を使用してAIを特定
+        // 3. マッピング配列を使用してAIを特定
         $targetAi = TargetAi::fromBotId($targetId);
 
         if ($targetAi === null) {

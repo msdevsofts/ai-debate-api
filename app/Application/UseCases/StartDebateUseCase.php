@@ -16,7 +16,13 @@ class StartDebateUseCase
         private readonly DiscordApiAdapter $discordAdapter
     ) {}
 
-    public function execute(string $topic, ?string $initialAi = null, ?string $triggerBot = null): string
+    public function execute(
+        string $topic,
+        ?string $initialAi = null,
+        ?string $triggerBot = null,
+        ?string $applicationId = null,
+        ?string $token = null
+    ): string
     {
         // 1. 先にセッションを作成してIDを取得する (チャンネルIDなどは後で更新)
         $session = new DebateSession(
@@ -40,15 +46,23 @@ class StartDebateUseCase
         $session->discordChannelId = $channelId;
         $this->repository->save($session);
 
-        // --- 追記: DEFERRED レスポンスへの後追いメッセージ送信 ---
-        // 最初に応答したBotが誰かを特定（InteractionControllerから渡される botType を使用）
-        $this->discordAdapter->postMessage(
-            "🤖 議題『{$topic}』を受け付けました！専用チャンネル <#{$channelId}> を作成しました。議論を開始します...",
-            $channelId, // チャンネルIDに送るか、Interaction Token が必要だが今はシンプルにチャンネルへ
-            \App\Domain\Enums\TargetAi::GEMINI,
-            null,
-            $triggerBot
-        );
+        // --- Interaction の更新 (元の「考え中...」を上書き) ---
+        if ($applicationId && $token) {
+            $this->discordAdapter->editOriginalInteractionResponse(
+                $applicationId,
+                $token,
+                "🤖 議題『{$topic}』を受け付けました！専用チャンネル <#{$channelId}> を作成しました。議論を開始します..."
+            );
+        } else {
+            // フォールバック: 元のチャンネルへのメッセージ送信（Interaction Tokenがない場合）
+            $this->discordAdapter->postMessage(
+                "🤖 議題『{$topic}』を受け付けました！専用チャンネル <#{$channelId}> を作成しました。議論を開始します...",
+                config('services.discord.channel_id'), // デフォルトのチャンネル
+                \App\Domain\Enums\TargetAi::GEMINI,
+                null,
+                $triggerBot
+            );
+        }
 
         // 4. 非同期Jobディスパッチ
         ProcessDebateTurn::dispatch($session->id);

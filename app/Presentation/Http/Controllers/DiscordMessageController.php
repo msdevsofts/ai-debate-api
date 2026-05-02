@@ -61,7 +61,7 @@ class DiscordMessageController extends Controller
             $query = $content; // 人間の発言内容をそのままコンテキストに含める
         } else {
             // メンションがある場合は、そのメンション部分を除去してクエリとする
-            $query = preg_replace('/<@!?[0-9]+>/', '', $content);
+            $query = preg_replace('/<@!?([0-9]+)>/', '', $content);
             $query = trim($query);
             if (empty($query)) {
                 $query = $session->topic;

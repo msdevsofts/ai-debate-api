@@ -30,9 +30,13 @@ class DiscordInteractionControllerTest extends TestCase
 
         $topic = 'AIの未来について';
         $bot = 'llama';
+        $applicationId = '123456789';
+        $token = 'interaction_token_abc';
 
         $response = $this->postJson("/api/discord/interactions?bot={$bot}", [
             'type' => 2,
+            'application_id' => $applicationId,
+            'token' => $token,
             'data' => [
                 'name' => 'discuss',
                 'options' => [
@@ -52,8 +56,12 @@ class DiscordInteractionControllerTest extends TestCase
                 'type' => 5,
             ]);
 
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic, $bot) {
-            return $job->topic === $topic && $job->initialAi === null && $job->triggerBot === $bot;
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic, $bot, $applicationId, $token) {
+            return $job->topic === $topic &&
+                   $job->initialAi === null &&
+                   $job->triggerBot === $bot &&
+                   $job->applicationId === $applicationId &&
+                   $job->token === $token;
         });
     }
 

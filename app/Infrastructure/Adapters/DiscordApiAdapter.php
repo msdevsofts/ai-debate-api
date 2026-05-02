@@ -116,4 +116,23 @@ class DiscordApiAdapter
             throw new \RuntimeException('Discord API post message failed');
         }
     }
+
+    /**
+     * Interactionのレスポンス（Edit Original Interaction Response）を更新する
+     * PATCH /webhooks/{application_id}/{interaction_token}/messages/@original
+     */
+    public function editOriginalInteractionResponse(string $applicationId, string $token, string $content): void
+    {
+        $response = Http::patch("https://discord.com/api/v10/webhooks/{$applicationId}/{$token}/messages/@original", [
+            'content' => $content,
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Discord Edit Interaction Error', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'application_id' => $applicationId,
+            ]);
+        }
+    }
 }

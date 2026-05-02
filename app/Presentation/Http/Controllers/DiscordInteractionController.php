@@ -30,9 +30,11 @@ class DiscordInteractionController extends Controller
                 $options = $data['options'] ?? [];
                 $topic = collect($options)->firstWhere('name', 'topic')['value'] ?? null;
                 $initialAi = collect($options)->firstWhere('name', 'model')['value'] ?? null;
+                $applicationId = $request->json('application_id');
+                $token = $request->json('token');
 
                 // 非同期Jobをディスパッチして即座にDEFERREDを返す
-                StartDebateJob::dispatch($topic, $initialAi, $bot);
+                StartDebateJob::dispatch($topic, $initialAi, $bot, $applicationId, $token);
 
                 return response()->json([
                     'type' => 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE

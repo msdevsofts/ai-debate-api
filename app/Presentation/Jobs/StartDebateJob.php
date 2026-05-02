@@ -24,13 +24,21 @@ class StartDebateJob implements ShouldQueue
     public function __construct(
         public readonly string $topic,
         public readonly ?string $initialAi = null,
-        public readonly ?string $triggerBot = null
+        public readonly ?string $triggerBot = null,
+        public readonly ?string $applicationId = null,
+        public readonly ?string $token = null
     ) {}
 
     public function handle(StartDebateUseCase $useCase): void
     {
         try {
-            $useCase->execute($this->topic, $this->initialAi, $this->triggerBot);
+            $useCase->execute(
+                $this->topic,
+                $this->initialAi,
+                $this->triggerBot,
+                $this->applicationId,
+                $this->token
+            );
         } catch (\Exception $e) {
             Log::error('StartDebateJob Failed', [
                 'topic' => $this->topic,

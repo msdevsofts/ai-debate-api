@@ -295,4 +295,51 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         // Assert
         Queue::assertNotPushed(ProcessDebateTurn::class);
     }
+    public function test_execute_dispatches_next_turn_with_nickname_mention(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        // configのモック
+        config(['services.discord.bot_ids' => ['999' => 'phi']]);
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        // ニックネームメンション (<@!ID>) 形式
+        $answerWithNicknameMention = "次は <@!999> さん、お願いします。";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithNicknameMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        $useCase->execute($sessionId);
+
+        // Assert
+        // <@!999> から 999 を抽出し、Phi を特定できることを確認
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::PHI;
+        });
+    }
 }
