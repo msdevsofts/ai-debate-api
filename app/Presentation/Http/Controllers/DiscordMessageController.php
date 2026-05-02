@@ -9,7 +9,7 @@ use App\Domain\Repositories\DebateSessionRepositoryInterface;
 use App\Presentation\Jobs\ProcessDebateTurn;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 
 class DiscordMessageController extends Controller
@@ -47,19 +47,7 @@ class DiscordMessageController extends Controller
         }
 
         // 1. メッセージ内にBotへのメンションが含まれているかチェック
-        // @Llama, @Gemma, @Phi, @Gemini などのパターン
-        $targetAi = null;
-        if (stripos($content, '@Gemma') !== false) {
-            $targetAi = TargetAi::GEMMA;
-        } elseif (stripos($content, '@Phi') !== false) {
-            $targetAi = TargetAi::PHI;
-        } elseif (stripos($content, '@Llama') !== false) {
-            $targetAi = TargetAi::LLAMA;
-        } elseif (stripos($content, '@Gemini') !== false) {
-            $targetAi = TargetAi::GEMINI;
-        } elseif (stripos($content, '@GPT-OSS-Q2') !== false) {
-            $targetAi = TargetAi::GPT_OSS_Q2;
-        }
+        $targetAi = TargetAi::fromMention($content);
 
         if ($targetAi === null) {
             return response()->json(['message' => 'No mention found'], 200);

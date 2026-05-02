@@ -97,35 +97,19 @@ class ProcessDebateTurnUseCase
      */
     private function detectMentionedAi(string $content): ?TargetAi
     {
-        // 1. <@ID> 形式を正規表現でスキャン (configのマッピングを使用)
-        $botIds = config('services.discord.bot_ids', []);
+        // 1. <@ID> 形式を正規表現でスキャン
         if (preg_match_all('/<@([0-9]+)>/', $content, $matches)) {
             foreach ($matches[1] as $mentionedId) {
-                if (isset($botIds[$mentionedId])) {
-                    $name = strtolower($botIds[$mentionedId]);
-                    return match ($name) {
-                        'gemma' => TargetAi::GEMMA,
-                        'phi' => TargetAi::PHI,
-                        'llama' => TargetAi::LLAMA,
-                        'gemini' => TargetAi::GEMINI,
-                        'gpt_oss_q2' => TargetAi::GPT_OSS_Q2,
-                        default => null,
-                    };
+                if ($target = TargetAi::fromBotId($mentionedId)) {
+                    return $target;
                 }
             }
         }
 
         // 2. フォールバック: <@ID> (Name) 形式を正規表現でスキャン
         if (preg_match('/<@([0-9]+)>\s*\((Gemma|Phi|Llama|Gemini|GPT-OSS-Q2)\)/i', $content, $matches)) {
-            $name = strtolower($matches[2]);
-            return match ($name) {
-                'gemma' => TargetAi::GEMMA,
-                'phi' => TargetAi::PHI,
-                'llama' => TargetAi::LLAMA,
-                'gemini' => TargetAi::GEMINI,
-                'gpt-oss-q2' => TargetAi::GPT_OSS_Q2,
-                default => null,
-            };
+            $name = strtolower(str_replace('-', '_', $matches[2]));
+            return TargetAi::tryFrom($name);
         }
 
         return null;
