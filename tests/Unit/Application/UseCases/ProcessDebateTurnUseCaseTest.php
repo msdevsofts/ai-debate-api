@@ -454,4 +454,113 @@ class ProcessDebateTurnUseCaseTest extends TestCase
                    in_array($job->targetAi, [TargetAi::LLAMA, TargetAi::GEMMA]);
         });
     }
+
+    public function test_execute_rewrites_discord_mention_when_fallback_occurs(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        // configのモック
+        config(['services.discord.bot_ids' => [
+            '111' => 'phi',
+            '222' => 'llama'
+        ]]);
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        // Phiが自分自身をメンションしてしまい、Llama(222)にフォールバックするケースを想定
+        $answerWithSelfMention = "次は私自身 <@111> (Phi) が話します。";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithSelfMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        // Discordには書き換えられたメッセージが送信されることを確認
+        // <@111> -> <@222> に置換、 (Phi) が除去されていること
+        $expectedContent = "次は私自身 <@222> が話します。";
+        $discordAdapter->shouldReceive('postMessage')
+            ->with($expectedContent, '123456', TargetAi::PHI, null)
+            ->once();
+
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        $useCase->execute($sessionId, TargetAi::PHI);
+
+        // Assert
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) {
+            return $job->targetAi === TargetAi::LLAMA;
+        });
+    }
+
+    public function test_execute_appends_mention_when_no_mention_present(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        config(['services.discord.bot_ids' => [
+            '111' => 'phi',
+            '222' => 'llama'
+        ]]);
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        $answerWithoutMention = "意見を述べました。";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithoutMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        // 末尾にメンションが追記されることを確認
+        $expectedContent = "意見を述べました。 <@222>";
+        $discordAdapter->shouldReceive('postMessage')
+            ->with($expectedContent, '123456', TargetAi::PHI, null)
+            ->once();
+
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        $useCase->execute($sessionId, TargetAi::PHI);
+
+        // Assert
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) {
+            return $job->targetAi === TargetAi::LLAMA;
+        });
+    }
 }

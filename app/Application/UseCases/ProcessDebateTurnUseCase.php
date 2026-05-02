@@ -43,25 +43,52 @@ class ProcessDebateTurnUseCase
                 $session->difyConversationId = $response['conversation_id'];
             }
 
-            // Discordメッセージ投稿
             $content = $response['answer'] ?? '';
+
+            // メンション検知と次発言者の決定を先に行う
+            $nextAi = $this->extractNextAi($content, $targetAi);
+
+            // Discordメッセージのテキスト書き換え（メンションの同期）
+            if ($nextAi && $nextAi !== TargetAi::GEMINI_CONCLUSION) {
+                $nextBotId = $nextAi->getBotId();
+                if ($nextBotId) {
+                    $newMention = "<@{$nextBotId}>";
+
+                    // 1. テキスト内に何らかのメンションタグ（ <@\d+> または <@!\d+> ）が存在する場合、すべて置換
+                    if (preg_match('/<@!?\d+>/', $content)) {
+                        $content = preg_replace('/<@!?\d+>/', $newMention, $content);
+                    } else {
+                        // 2. メンションタグが全く無かった場合は、末尾に追記
+                        $content .= " {$newMention}";
+                    }
+
+                    // 3. （オプション）名前の残骸（@Name, (Name)）を除去
+                    foreach (TargetAi::cases() as $case) {
+                        $name = $case->getName();
+                        // 「@Name」や「(Name)」を正規表現で除去（大文字小文字を区別しない）
+                        $content = preg_replace("/@{$name}/i", '', $content);
+                        $content = preg_replace("/\({$name}\)/i", '', $content);
+                    }
+                    // 余分な空白を整理
+                    $content = trim(preg_replace('/\s+/', ' ', $content));
+                }
+            }
+
+            // Discordメッセージ投稿
             $this->discordAdapter->postMessage($content, $session->discordChannelId, $targetAi, $replyToMessageId);
 
             // ターンをインクリメント
             $session->incrementTurn();
 
             // 終了判定
-            if ($targetAi->value === 'gemini_conclusion') {
+            if ($targetAi->value === 'gemini_conclusion' || ($nextAi === null && $targetAi->value === 'gemini')) {
                 $session->complete();
             }
 
             $this->repository->save($session);
 
-            // メンション検知による自律的ディベートの継続
-            $nextAi = $this->extractNextAi($content, $targetAi);
-
             if ($nextAi && !$session->isCompleted()) {
-                // メンションされたAIがいれば、そのAIをターゲットにして10秒後に実行
+                // 決定されたAIをターゲットにして10秒後に実行
                 ProcessDebateTurn::dispatch($session->id, $nextAi)->delay(now()->addSeconds(10));
             }
         } catch (\Exception $e) {

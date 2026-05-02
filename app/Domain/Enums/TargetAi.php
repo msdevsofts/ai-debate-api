@@ -67,6 +67,26 @@ enum TargetAi: string
         };
     }
 
+    public function getBotId(): ?string
+    {
+        $botIds = config('services.discord.bot_ids', []);
+        $name = match ($this) {
+            self::GEMMA => 'gemma',
+            self::PHI => 'phi',
+            self::LLAMA => 'llama',
+            self::GEMINI, self::GEMINI_CONCLUSION => 'gemini',
+            self::GPT_OSS_Q2 => 'gpt_oss_q2',
+        };
+
+        foreach ($botIds as $id => $botName) {
+            if (strtolower((string)$botName) === $name) {
+                return (string)$id;
+            }
+        }
+
+        return null;
+    }
+
     public function getAvatarUrl(): string
     {
         // 適切なアバターURLを設定（今回はプレースホルダ）
