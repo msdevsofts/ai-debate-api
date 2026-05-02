@@ -40,6 +40,16 @@ class StartDebateUseCase
         $session->discordChannelId = $channelId;
         $this->repository->save($session);
 
+        // --- 追記: DEFERRED レスポンスへの後追いメッセージ送信 ---
+        // 最初に応答したBotが誰かを特定（InteractionControllerから渡される botType を使用）
+        $this->discordAdapter->postMessage(
+            "🤖 議題『{$topic}』を受け付けました！専用チャンネル <#{$channelId}> を作成しました。議論を開始します...",
+            $channelId, // チャンネルIDに送るか、Interaction Token が必要だが今はシンプルにチャンネルへ
+            \App\Domain\Enums\TargetAi::GEMINI,
+            null,
+            $triggerBot
+        );
+
         // 4. 非同期Jobディスパッチ
         ProcessDebateTurn::dispatch($session->id);
 

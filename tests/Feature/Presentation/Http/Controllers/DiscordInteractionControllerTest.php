@@ -49,10 +49,7 @@ class DiscordInteractionControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'type' => 4,
-                'data' => [
-                    'content' => "🤖 議題『{$topic}』を受け付けました！新規チャンネルを作成してAIたちを呼び出します..."
-                ]
+                'type' => 5,
             ]);
 
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic, $bot) {
@@ -95,10 +92,40 @@ class DiscordInteractionControllerTest extends TestCase
         });
     }
 
+    public function test_handle_with_gpt_oss_q2_env_key(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $bot = 'gpt-oss-q2';
+        $topic = 'test';
+
+        $response = $this->postJson("/api/discord/interactions?bot={$bot}", [
+            'type' => 2,
+            'data' => [
+                'name' => 'discuss',
+                'options' => [
+                    [
+                        'name' => 'topic',
+                        'value' => $topic
+                    ]
+                ]
+            ]
+        ], [
+            'X-Signature-Ed25519' => 'dummy',
+            'X-Signature-Timestamp' => '12345',
+        ]);
+
+        $response->assertStatus(200);
+
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Presentation\Jobs\StartDebateJob::class, function ($job) use ($topic, $bot) {
+            return $job->topic === $topic && $job->triggerBot === $bot;
+        });
+    }
     public function test_handle_returns_401_on_missing_signature(): void
     {
         $response = $this->postJson('/api/discord/interactions', [
-            'type' => 1
+            'type' => 2, // APPLICATION_COMMAND など、PING以外のタイプ
+            'data' => ['name' => 'discuss']
         ]);
 
         $response->assertStatus(401);

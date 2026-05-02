@@ -78,14 +78,15 @@ class DiscordApiAdapter
         return (string) $response->json('url');
     }
 
-    public function postMessage(string $content, string $channelId, TargetAi $targetAi, ?string $replyToMessageId = null): void
+    public function postMessage(string $content, string $channelId, TargetAi $targetAi, ?string $replyToMessageId = null, ?string $forceAiKey = null): void
     {
         // ターゲットAIに応じたBotトークンを選択 (gemini_conclusionはgeminiトークンを使用)
-        $aiKey = match ($targetAi) {
+        $aiKey = $forceAiKey ?? match ($targetAi) {
             TargetAi::GEMINI, TargetAi::GEMINI_CONCLUSION => 'gemini',
             TargetAi::LLAMA => 'llama',
             TargetAi::GEMMA => 'gemma',
             TargetAi::PHI => 'phi',
+            TargetAi::GPT_OSS_Q2 => 'gpt_oss_q2',
         };
 
         $token = $this->botTokens[$aiKey] ?? $this->botToken;

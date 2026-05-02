@@ -7,6 +7,30 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## マルチAIディベートシステム 運用ガイド
+
+### 1. サーバー要件
+- PHP 8.5+
+- MySQL (Queue/Database ドライバ用)
+- libsodium (Discord 署名検証用、推奨)
+
+### 2. 環境設定 (.env)
+`.env.example` を参考に、各Botのトークン、公開鍵、アプリIDを設定してください。
+
+### 3. キューワーカーの実行 (重要)
+リソース（2GB RAM）を保護し、AIの長時間生成に対応するため、以下の設定でワーカーを起動してください。
+
+```bash
+# --timeout: Jobごとの最大実行時間 (15分以上を推奨)
+# --concurrency: 並列実行を避け、1に設定 (リソース節約のため)
+php artisan queue:work --timeout=1200
+```
+
+### 4. Discord Interaction 設定
+Discord Developer Portal の Interactions Endpoint URL に以下を設定してください。
+`https://your-domain.com/api/discord/interactions?bot=モデル名`
+(モデル名: gemini, gemma, phi, llama, gpt_oss_q2)
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

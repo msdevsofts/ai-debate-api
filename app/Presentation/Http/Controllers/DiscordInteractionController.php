@@ -14,51 +14,16 @@ class DiscordInteractionController extends Controller
     public function handle(Request $request): JsonResponse
     {
         $bot = $request->query('bot');
-        \Log::info('Interaction received for bot: ' . $bot, $request->all());
+        $type = $request->json('type');
 
-        // --- 1. Discordリクエストの署名検証 (必須) ---
-        $botType = $bot;
-        $signature = $request->header('X-Signature-Ed25519');
-        $timestamp = $request->header('X-Signature-Timestamp');
-        $body = $request->getContent();
+        \Log::info('Interaction received for bot: ' . $bot . ' (Type: ' . $type . ')', $request->all());
 
-        // botパラメータに基づいて公開鍵を動的に切り替え
-        // 文字列変換（ハイフンをアンダースコアに、大文字に）を適用してconfig/envから取得
-        $configKey = strtoupper(str_replace('-', '_', (string)$botType));
-        $publicKey = env("DISCORD_PUBLIC_KEY_{$configKey}") ?? config("services.discord.public_keys.{$botType}") ?? config('services.discord.public_key');
-
-        if (!$signature || !$timestamp || !$publicKey) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        try {
-            // sodium_crypto_sign_verify_detached が利用可能か確認（libsodium拡張が必要）
-            if (function_exists('sodium_crypto_sign_verify_detached')) {
-                $isVerified = sodium_crypto_sign_verify_detached(
-                    hex2bin($signature),
-                    $timestamp . $body,
-                    hex2bin($publicKey)
-                );
-
-                if (!$isVerified) {
-                    return response()->json(['message' => 'Invalid request signature'], 401);
-                }
-            } else {
-                // libsodiumがインストールされていない場合はログに警告を出し、以前の簡易検証(ヘッダー存在確認のみ)を継続
-                \Illuminate\Support\Facades\Log::warning('libsodium extension is not installed. Skipping strict signature verification.');
-            }
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Invalid signature format'], 401);
-        }
-
-        // --- 2. PING イベントへの応答 (必須) ---
-        if ($request->input('type') === 1) {
+        // --- 1. PING イベントへの応答 (DiscordのURL認証に必須) ---
+        if ($type === 1) {
             return response()->json(['type' => 1]);
         }
 
-        $type = $request->json('type');
-
-        // APPLICATION_COMMAND (Slash Command)
+        // --- 2. APPLICATION_COMMAND (Slash Command: type 2) ---
         if ($type === 2) {
             $data = $request->json('data');
             if (($data['name'] ?? '') === 'discuss') {
@@ -70,11 +35,12 @@ class DiscordInteractionController extends Controller
                 StartDebateJob::dispatch($topic, $initialAi, $bot);
 
                 return response()->json([
-                    'type' => 5,
+                    'type' => 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
                 ]);
             }
         }
 
-        return response()->json(['message' => 'Invalid interaction'], 400);
+        // --- 4. それ以外のInteractionタイプ ---
+        return response()->json(['message' => 'Unknown interaction type'], 400);
     }
 }

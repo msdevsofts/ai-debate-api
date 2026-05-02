@@ -26,6 +26,7 @@ class StartDebateUseCaseTest extends TestCase
         $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
 
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
+        $discordAdapter->shouldReceive('postMessage')->once();
 
         $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) {
             if ($session->id === null) {
@@ -56,6 +57,7 @@ class StartDebateUseCaseTest extends TestCase
         $initialAi = 'gemini';
 
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
+        $discordAdapter->shouldReceive('postMessage')->once();
 
         $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) use ($initialAi) {
             if ($session->id === null) {
