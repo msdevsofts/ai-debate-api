@@ -400,4 +400,58 @@ class ProcessDebateTurnUseCaseTest extends TestCase
             return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::PHI;
         });
     }
+
+    public function test_execute_falls_back_to_random_ai_when_ai_mentions_itself(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        // configのモック
+        config(['services.discord.bot_ids' => [
+            '111' => 'phi',
+            '222' => 'llama',
+            '333' => 'gemma'
+        ]]);
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        // Phiが自分自身（Phi: 111）をメンションするケース
+        $answerWithSelfMention = "自分自身 <@111> に問いかけます。";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithSelfMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter);
+
+        // Execute
+        $useCase->execute($sessionId, TargetAi::PHI);
+
+        // Assert
+        // 自己メンションがブロックされ、自分自身(Phi)以外のAI（Llama or Gemma）が選択されることを確認
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId &&
+                   $job->targetAi !== TargetAi::PHI &&
+                   in_array($job->targetAi, [TargetAi::LLAMA, TargetAi::GEMMA]);
+        });
+    }
 }

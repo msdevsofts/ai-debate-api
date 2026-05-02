@@ -93,6 +93,8 @@ class ProcessDebateTurnUseCase
     {
         \Log::debug('Extracting mention from text', ['text' => $content]);
 
+        $targetAi = null;
+
         // 1. <@ID> または <@!ID> 形式を正規表現ですべて抽出
         if (preg_match_all('/<@!?(\d+)>/', $content, $matches)) {
             \Log::debug('Matched IDs', ['matches' => $matches]);
@@ -104,14 +106,27 @@ class ProcessDebateTurnUseCase
             // 3. マッピング配列を使用してAIを特定
             $targetAi = TargetAi::fromBotId($targetId);
 
+            // 【追加要件】自己メンションのチェック
+            if ($targetAi !== null && $targetAi === $currentAi) {
+                \Log::warning('AI mentioned itself. Blocking self-loop and triggering random fallback.', [
+                    'bot_id' => $targetId,
+                    'ai' => $targetAi->value
+                ]);
+                $targetAi = null; // メンションを無効化してフォールバックへ
+            }
+
             if ($targetAi !== null) {
                 return $targetAi;
             }
 
-            \Log::info("マッピングに存在しないID（{$targetId}）のため、フォールバック処理に移行します。");
+            if ($targetAi === null && empty($matches[0])) {
+                 // ここには来ないはずだが、念のため
+            } else {
+                \Log::info("有効なメンションが見つからなかったため、フォールバック処理に移行します。");
+            }
         }
 
-        // メンションが見つからなかった場合（フォールバック）
+        // メンションが見つからなかった、または自己メンションで無効化された場合（フォールバック）
 
         // 1. 現在の発言者が「Gemini（司会）」である場合：意図的な議論終了
         if ($currentAi === TargetAi::GEMINI || $currentAi === TargetAi::GEMINI_CONCLUSION) {
@@ -119,16 +134,16 @@ class ProcessDebateTurnUseCase
             return null;
         }
 
-        // 2. 現在の発言者が「Gemini以外」である場合：メンション忘れのミスとしてフォールバック
-        \Log::warning('No mention found from participant. Random fallback triggered.');
+        // 2. 現在の発言者が「Gemini以外」である場合：メンション忘れ、または自己メンション回避のためのフォールバック
+        \Log::warning('No valid mention found from participant. Random fallback triggered.');
 
         $botIds = config('services.discord.bot_ids', []);
         $availableAis = [];
 
         foreach ($botIds as $id => $name) {
             $ai = TargetAi::fromBotId((string)$id);
-            // 現在のAI（直前に発言したAI）および司会用ステータスを除外
-            if ($ai && $ai !== $currentAi && $ai !== TargetAi::GEMINI_CONCLUSION) {
+            // 現在のAI（自分自身）および司会用ステータス（Gemini関連）を除外
+            if ($ai && $ai !== $currentAi && $ai !== TargetAi::GEMINI && $ai !== TargetAi::GEMINI_CONCLUSION) {
                 $availableAis[] = $ai;
             }
         }
