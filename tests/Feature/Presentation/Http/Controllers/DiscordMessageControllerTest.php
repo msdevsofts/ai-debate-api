@@ -13,22 +13,41 @@ use Mockery;
 
 class DiscordMessageControllerTest extends TestCase
 {
-    public function test_handle_dispatches_job_when_mention_found(): void
+    public function test_handle_ignores_bot_messages(): void
     {
         Queue::fake();
+
+        $response = $this->postJson('/api/discord/messages', [
+            'event' => 'MESSAGE_CREATE',
+            'data' => [
+                'author' => ['bot' => true],
+                'content' => 'Bot says something',
+                'channel_id' => '123456',
+                'id' => '789'
+            ]
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['status' => 'ignored']);
+
+        Queue::assertNotPushed(ProcessDebateTurn::class);
+    }
+
+    public function test_handle_processes_human_interruption_without_mention(): void
+    {
+        Queue::fake();
+
         $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
         $this->app->instance(DebateSessionRepositoryInterface::class, $repository);
 
-        $channelId = 'channel_123';
-        $messageId = 'msg_456';
-        $content = '@Gemma こんにちは！';
-
+        $sessionId = 1;
+        $channelId = '123456';
         $session = new DebateSession(
-            id: 1,
-            topic: 'テスト議題',
+            id: $sessionId,
+            topic: 'AIの未来',
             initialAi: null,
             discordChannelId: $channelId,
-            discordWebhookUrl: 'https://webhook.url',
+            discordWebhookUrl: null,
             currentTurn: 1,
             maxTurns: 10,
             difyConversationId: 'conv_123',
@@ -37,36 +56,72 @@ class DiscordMessageControllerTest extends TestCase
 
         $repository->shouldReceive('findByDiscordChannelId')
             ->with($channelId)
-            ->once()
             ->andReturn($session);
 
+        $content = '人間が割り込みます。どう思いますか？';
+
         $response = $this->postJson('/api/discord/messages', [
-            'content' => $content,
-            'channel_id' => $channelId,
-            'id' => $messageId,
+            'data' => [
+                'author' => ['bot' => false],
+                'content' => $content,
+                'channel_id' => $channelId,
+                'id' => '789'
+            ]
         ]);
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertJson(['status' => 'ok']);
 
-        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($messageId) {
-            // リフレクション等を使ってプライベートプロパティを確認する必要があるが、
-            // ここでは簡易的にディスパッチされたことのみを確認、あるいは
-            // コンストラクタ引数のテストを検討する。
-            // StartDebateJob等とは異なりプライベートプロパティなので直接アクセスはできない。
-            return true;
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $content) {
+            return $job->debateSessionId === $sessionId
+                && $job->targetAi === \App\Domain\Enums\TargetAi::GEMINI
+                && $job->query === $content;
         });
     }
 
-    public function test_handle_does_nothing_when_no_mention(): void
+    public function test_handle_processes_human_message_with_mention(): void
     {
         Queue::fake();
+
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $this->app->instance(DebateSessionRepositoryInterface::class, $repository);
+
+        $sessionId = 1;
+        $channelId = '123456';
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来',
+            initialAi: null,
+            discordChannelId: $channelId,
+            discordWebhookUrl: null,
+            currentTurn: 1,
+            maxTurns: 10,
+            difyConversationId: 'conv_123',
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findByDiscordChannelId')
+            ->with($channelId)
+            ->andReturn($session);
+
+        // ラベルから判定するパスを試す
+        $content = '次は @Phi さんに聞きたいです。';
+
         $response = $this->postJson('/api/discord/messages', [
-            'content' => 'ただのメッセージ',
-            'channel_id' => '123',
-            'id' => '456',
+            'data' => [
+                'author' => ['bot' => false],
+                'content' => $content,
+                'channel_id' => $channelId,
+                'id' => '789'
+            ]
         ]);
 
-        $response->assertStatus(200);
-        Queue::assertNotPushed(ProcessDebateTurn::class);
+        $response->assertStatus(200)
+            ->assertJson(['status' => 'ok']);
+
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId
+                && $job->targetAi === \App\Domain\Enums\TargetAi::PHI;
+        });
     }
 }

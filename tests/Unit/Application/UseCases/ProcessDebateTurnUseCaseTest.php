@@ -208,7 +208,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         });
     }
 
-    public function test_execute_ends_when_no_mentions(): void
+    public function test_execute_falls_back_to_gemini_when_no_mentions(): void
     {
         // Mocking
         $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
@@ -246,7 +246,10 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $useCase->execute($sessionId);
 
         // Assert
-        Queue::assertNotPushed(ProcessDebateTurn::class);
+        // メンションがない場合、Geminiにフォールバックしてジョブがディスパッチされることを確認
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::GEMINI;
+        });
     }
 
     public function test_execute_ends_when_unmapped_id_mentioned(): void

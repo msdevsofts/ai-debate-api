@@ -93,8 +93,8 @@ class ProcessDebateTurnUseCase
     {
         // 1. <@ID> 形式を正規表現ですべて抽出
         if (!preg_match_all('/<@(\d+)>/', $content, $matches)) {
-            \Log::info('メンションが含まれていないため、次ターンのジョブをディスパッチせずに終了します。');
-            return null;
+            \Log::warning('No mention found in AI response. Fallback to Gemini.');
+            return TargetAi::GEMINI;
         }
 
         $mentionedIds = $matches[1];
