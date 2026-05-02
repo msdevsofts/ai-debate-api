@@ -13,9 +13,11 @@ class DiscordInteractionControllerTest extends TestCase
 {
     public function test_handle_returns_ping_response(): void
     {
-        // PING の場合は署名検証をスキップするようにしたので、ヘッダーがなくても通るはず
         $response = $this->postJson('/api/discord/interactions', [
             'type' => 1
+        ], [
+            'X-Signature-Ed25519' => 'dummy',
+            'X-Signature-Timestamp' => '12345',
         ]);
 
         $response->assertStatus(200)

@@ -23,15 +23,6 @@ class VerifyDiscordSignature
         $timestamp = $request->header('X-Signature-Timestamp');
         $body = $request->getContent();
 
-        $type = $request->json('type');
-
-        // PING (type 1) の場合は署名検証をスキップして即座にPONGを返す
-        // ※DiscordのURL認証時は署名が正しい必要があるが、ミドルウェアで弾かれるのを防ぐため、
-        //   あるいはデバッグを容易にするためにここで早期リターンを実装した。
-        if ($type === 1) {
-            return $next($request);
-        }
-
         // 1. 環境変数キーの生成 (例: gpt-oss-q2 -> DISCORD_PUBLIC_KEY_GPT_OSS_Q2)
         $envSuffix = strtoupper(str_replace('-', '_', (string)$bot));
         $envKey = "DISCORD_PUBLIC_KEY_{$envSuffix}";
@@ -52,8 +43,9 @@ class VerifyDiscordSignature
         ]);
 
         if (!$signature || !$timestamp || !$publicKey) {
-            Log::warning('Unauthorized: Missing signature, timestamp, or public key', [
+            Log::error('Unauthorized: Missing signature, timestamp, or public key', [
                 'bot' => $bot,
+                'envKey' => $envKey,
                 'publicKey_exists' => !empty($publicKey)
             ]);
             abort(401, 'Invalid signature or missing key');
@@ -78,14 +70,14 @@ class VerifyDiscordSignature
                 );
 
                 if (!$isVerified) {
-                    Log::warning('Invalid request signature', ['bot' => $bot]);
-                    abort(401, 'Invalid signature or missing key');
+                    Log::error('Invalid request signature', ['bot' => $bot, 'envKey' => $envKey]);
+                    abort(401, 'Invalid signature');
                 }
             } else {
                 Log::warning('libsodium extension is not installed. Skipping strict signature verification.');
             }
         } catch (\Exception $e) {
-            Log::error('Signature verification error: ' . $e->getMessage(), ['bot' => $bot]);
+            Log::error('Signature verification error: ' . $e->getMessage(), ['bot' => $bot, 'envKey' => $envKey]);
             abort(401, 'Invalid signature format');
         }
 
