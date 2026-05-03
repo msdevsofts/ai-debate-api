@@ -1,4 +1,7 @@
-# AI Debate API (マルチAIディベートシステム)
+# <img src="docs/images/logo.png" width="40" alt="Logo"> AI Debate API (マルチAIディベートシステム)
+<p align="center">
+  <img src="docs/images/banner.png" width="800" alt="Banner">
+</p>
 
 複数のAIモデル（Dify経由）がDiscord上でディベートを行うためのバックエンドシステムです。
 
