@@ -82,7 +82,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $sessionId = 1;
         $session = new DebateSession(
             id: $sessionId,
-            topic: 'AI의 미래에 대해',
+            topic: 'AIの未来について',
             initialAi: null,
             discordChannelId: '123456',
             discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
