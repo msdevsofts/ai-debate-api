@@ -280,6 +280,62 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         });
     }
 
+    public function test_execute_does_not_stop_when_gemini_is_the_first_speaker(): void
+    {
+        // Mocking
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        // configのモック（フォールバック用）
+        config(['services.discord.bot_ids' => [
+            '111' => 'gemini',
+            '222' => 'phi'
+        ]]);
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'AIの未来について',
+            initialAi: TargetAi::GEMINI,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
+            currentTurn: 0,
+            maxTurns: 10,
+            difyConversationId: null,
+            status: 'running'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        $answerWithoutMention = "司会のGeminiです。議論を始めましょう。";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $answerWithoutMention,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        // メンションがない場合のフォールバックで Phi が選ばれるようにする
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
+        $formatter->shouldReceive('format')->andReturn($answerWithoutMention . ' <@222>');
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+
+        // Execute
+        $useCase->execute($sessionId, TargetAi::GEMINI);
+
+        // Assert
+        // 1回目(currentTurn=1)の発言後、次のAI(PHI)がディスパッチされることを確認
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::PHI;
+        });
+        $this->assertFalse($session->isCompleted());
+    }
+
     public function test_execute_stops_when_gemini_has_no_mentions(): void
     {
         // Mocking

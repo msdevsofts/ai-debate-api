@@ -1,0 +1,260 @@
+
+  [2026-05-02 18:52:38] local.ERROR: Dify API Error {"status":400,"body":"{\"co
+de\":\"invalid_param\",\"message\":\"Run failed: [models] Connection Error, HTT
+PConnectionPool(host='10.0.0.201', port=30068): Read timed out. (read timeout=3
+00)\",\"status\":400}
+  "}
+  [2026-05-02 18:52:39] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 18:52:40] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:19:08] local.ERROR: Dify API Error {"status":400,"body":"{\"co
+de\":\"invalid_param\",\"message\":\"Run failed: [Ollama] Error: req_id: b3f328
+733b PluginDaemonInternalServerError: killed by timeout\",\"status\":400}
+  "}
+  [2026-05-02 19:19:09] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:19:09] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:24:13] local.ERROR: Dify API Error {"status":400,"body":"{\"co
+de\":\"invalid_param\",\"message\":\"Run failed: [models] Connection Error, HTT
+PConnectionPool(host='10.0.0.201', port=30068): Read timed out. (read timeout=3
+00)\",\"status\":400}
+  "}
+  [2026-05-02 19:24:13] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:24:13] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:29:14] local.ERROR: Dify API Error {"status":400,"body":"{\"co
+de\":\"invalid_param\",\"message\":\"Run failed: [models] Connection Error, HTT
+PConnectionPool(host='10.0.0.201', port=30068): Read timed out. (read timeout=3
+00)\",\"status\":400}
+  "}
+  [2026-05-02 19:29:15] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:29:15] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:34:16] local.ERROR: Dify API Error {"status":400,"body":"{\"co
+de\":\"invalid_param\",\"message\":\"Run failed: [models] Connection Error, HTT
+PConnectionPool(host='10.0.0.201', port=30068): Read timed out. (read timeout=3
+00)\",\"status\":400}
+  "}
+  [2026-05-02 19:34:16] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:34:16] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:39:18] local.ERROR: Dify API Error {"status":400,"body":"{\"co
+de\":\"invalid_param\",\"message\":\"Run failed: [models] Connection Error, HTT
+PConnectionPool(host='10.0.0.201', port=30068): Read timed out. (read timeout=3
+00)\",\"status\":400}
+  "}
+  [2026-05-02 19:39:18] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:39:18] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:44:19] local.ERROR: Discord Post Message Error {"status":404,"
+body":"{\"message\": \"Unknown Channel\", \"code\": 10003}","channel_id":"15001
+98454574448680","ai":"gemini_conclusion"}
+  [2026-05-02 19:44:19] local.ERROR: Failed to notify error to Discord {"error"
+:"Discord API post message failed"}
+  [2026-05-02 19:44:19] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:44:19] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:49:21] local.ERROR: Discord Post Message Error {"status":404,"
+body":"{\"message\": \"Unknown Channel\", \"code\": 10003}","channel_id":"15001
+98454574448680","ai":"gemini_conclusion"}
+  [2026-05-02 19:49:21] local.ERROR: Failed to notify error to Discord {"error"
+:"Discord API post message failed"}
+  [2026-05-02 19:49:21] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:49:21] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:54:22] local.ERROR: Discord Post Message Error {"status":404,"
+body":"{\"message\": \"Unknown Channel\", \"code\": 10003}","channel_id":"15001
+98454574448680","ai":"gemini_conclusion"}
+  [2026-05-02 19:54:22] local.ERROR: Failed to notify error to Discord {"error"
+:"Discord API post message failed"}
+  [2026-05-02 19:54:22] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:54:23] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
+  [2026-05-02 19:59:24] local.ERROR: Discord Post Message Error {"status":404,"
+body":"{\"message\": \"Unknown Channel\", \"code\": 10003}","channel_id":"15001
+98454574448680","ai":"gemini_conclusion"}
+  [2026-05-02 19:59:24] local.ERROR: Failed to notify error to Discord {"error"
+:"Discord API post message failed"}
+  [2026-05-02 19:59:24] local.ERROR: ProcessDebateTurn Job Failed {"session_id"
+:22,"error":"Dify API call failed"}
+  [2026-05-02 19:59:25] local.ERROR: Dify API call failed {"exception":"[object
+] (RuntimeException(code: 0): Dify API call failed at /data/app/app/Infrastruct
+ure/Adapters/DifyApiAdapter.php:43)
+  [stacktrace]
+> #0 /data/app/app/Application/UseCases/ProcessDebateTurnUseCase.php(34): App\\
+Infrastructure\\Adapters\\DifyApiAdapter->chat()
+> #1 /data/app/app/Presentation/Jobs/ProcessDebateTurn.php(45): App\\Applicatio
+n\\UseCases\\ProcessDebateTurnUseCase->execute()
+  #2 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(36): App\\Presentation\\Jobs\\ProcessDebateTurn->handle()
+  #3 /data/app/vendor/laravel/framework/src/Illuminate/Container/Util.php(43):
+Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod
+::call():35}()
+  #4 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(96): Illuminate\\Container\\Util::unwrapIfClosure()
+  #5 /data/app/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.ph
+p(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+  #6 /data/app/vendor/laravel/framework/src/Illuminate/Container/Container.php(
+799): Illuminate\\Container\\BoundMethod::call()
