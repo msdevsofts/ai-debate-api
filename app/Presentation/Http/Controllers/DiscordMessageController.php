@@ -43,18 +43,21 @@ class DiscordMessageController extends Controller
 
         // 3. メッセージ内にAIへのメンションが含まれているかチェック
         $targetAi = TargetAi::fromMention($content);
+        $isHumanIntervention = false;
 
         // 4. メンションが含まれていない場合は「人間の割込み（ツッコミ）」と判定
         if ($targetAi === null) {
             // デフォルトで Gemini に返答させる
             $targetAi = TargetAi::GEMINI;
             $query = $content; // 人間の発言内容をそのままコンテキストに含める
+            $isHumanIntervention = true;
         } else {
             // メンションがある場合は、そのメンション部分を除去してクエリとする
             $query = trim(preg_replace('/<@!?([0-9]+)>/', '', $content));
             if (empty($query)) {
                 $query = $session->topic;
             }
+            $isHumanIntervention = true;
         }
 
         // 5. Jobをディスパッチ
@@ -62,7 +65,8 @@ class DiscordMessageController extends Controller
             $session->id,
             $targetAi,
             $query,
-            $messageId // 返信用に元のメッセージIDを渡す
+            $messageId, // 返信用に元のメッセージIDを渡す
+            $isHumanIntervention
         );
 
         return response()->json(['status' => 'ok']);

@@ -20,7 +20,13 @@ class ProcessDebateTurnUseCase
         private readonly DiscordMessageFormatter $messageFormatter
     ) {}
 
-    public function execute(int $sessionId, ?TargetAi $targetAi = null, ?string $query = null, ?string $replyToMessageId = null): void
+    public function execute(
+        int $sessionId,
+        ?TargetAi $targetAi = null,
+        ?string $query = null,
+        ?string $replyToMessageId = null,
+        bool $isHumanIntervention = false
+    ): void
     {
         $session = $this->repository->findById($sessionId);
         if (!$session || $session->isCompleted()) {
@@ -38,7 +44,8 @@ class ProcessDebateTurnUseCase
                 $query,
                 $session->difyConversationId,
                 $targetAi,
-                $session->topic
+                $session->topic,
+                $isHumanIntervention
             );
 
             // 履歴IDを更新

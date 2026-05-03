@@ -19,7 +19,7 @@ class DifyApiAdapter
         $this->apiKey = config('services.dify.api_key');
     }
 
-    public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic): array
+    public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic, bool $isHumanIntervention = false): array
     {
         $response = Http::withToken($this->apiKey)
             ->timeout(1000)
@@ -28,6 +28,7 @@ class DifyApiAdapter
                 'inputs' => [
                     'target_ai' => $targetAi->value,
                     'topic' => $topic,
+                    'is_human_intervention' => $isHumanIntervention,
                 ],
                 'query' => $query,
                 'response_mode' => 'blocking',

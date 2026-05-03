@@ -33,7 +33,8 @@ class ProcessDebateTurn implements ShouldQueue
         public readonly int $debateSessionId,
         ?TargetAi $targetAi = null,
         public readonly ?string $query = null,
-        public readonly ?string $replyToMessageId = null
+        public readonly ?string $replyToMessageId = null,
+        public readonly bool $isHumanIntervention = false
     ) {
         $this->targetAi = $targetAi;
     }
@@ -45,7 +46,8 @@ class ProcessDebateTurn implements ShouldQueue
             $this->debateSessionId,
             $this->targetAi,
             $this->query,
-            $this->replyToMessageId
+            $this->replyToMessageId,
+            $this->isHumanIntervention
         );
     }
 
