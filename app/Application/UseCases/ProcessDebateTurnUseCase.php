@@ -28,6 +28,13 @@ class ProcessDebateTurnUseCase
         bool $isHumanIntervention = false
     ): void
     {
+        \Illuminate\Support\Facades\Log::info('ProcessDebateTurnUseCase Execution Started', [
+            'session_id' => $sessionId,
+            'target_ai' => $targetAi?->value,
+            'is_human_intervention' => $isHumanIntervention,
+            'query' => $query
+        ]);
+
         $session = $this->repository->findById($sessionId);
         if (!$session || $session->isCompleted()) {
             return;

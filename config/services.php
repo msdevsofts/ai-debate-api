@@ -62,14 +62,14 @@ return [
             'phi' => env('DISCORD_PUBLIC_KEY_PHI'),
             'gpt_oss_q2' => env('DISCORD_PUBLIC_KEY_GPT_OSS_Q2'),
         ],
-        'bot_ids' => [
-            env('DISCORD_CLIENT_ID_AI_DEBATE') => 'ai_debate',
-            env('DISCORD_CLIENT_ID_GEMINI') => 'gemini',
-            env('DISCORD_CLIENT_ID_LLAMA') => 'llama',
-            env('DISCORD_CLIENT_ID_GEMMA') => 'gemma',
-            env('DISCORD_CLIENT_ID_PHI') => 'phi',
-            env('DISCORD_CLIENT_ID_GPT_OSS_Q2') => 'gpt_oss_q2',
-        ],
+        'bot_ids' => array_filter([
+            (string) env('DISCORD_CLIENT_ID_AI_DEBATE') => 'ai_debate',
+            (string) env('DISCORD_CLIENT_ID_GEMINI') => 'gemini',
+            (string) env('DISCORD_CLIENT_ID_LLAMA') => 'llama',
+            (string) env('DISCORD_CLIENT_ID_GEMMA') => 'gemma',
+            (string) env('DISCORD_CLIENT_ID_PHI') => 'phi',
+            (string) env('DISCORD_CLIENT_ID_GPT_OSS_Q2') => 'gpt_oss_q2',
+        ], fn($key) => $key !== ''),
     ],
 
 ];

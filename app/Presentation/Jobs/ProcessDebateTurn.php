@@ -41,6 +41,12 @@ class ProcessDebateTurn implements ShouldQueue
 
     public function handle(ProcessDebateTurnUseCase $useCase): void
     {
+        Log::info('ProcessDebateTurn Job Handling Started', [
+            'session_id' => $this->debateSessionId,
+            'target_ai' => $this->targetAi?->value,
+            'is_human_intervention' => $this->isHumanIntervention,
+        ]);
+
         // targetAi が null の場合は execute 内でローテーションロジックが走る
         $useCase->execute(
             $this->debateSessionId,

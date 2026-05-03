@@ -141,6 +141,12 @@ class DiscordInteractionController extends Controller
         }
 
         // 非同期Jobをディスパッチ
+        \Log::info('Dispatching ProcessDebateTurn Job', [
+            'session_id' => $session->id,
+            'target_ai' => $targetAi->value,
+            'is_human_intervention' => true
+        ]);
+
         \App\Presentation\Jobs\ProcessDebateTurn::dispatch(
             $session->id,
             $targetAi,
