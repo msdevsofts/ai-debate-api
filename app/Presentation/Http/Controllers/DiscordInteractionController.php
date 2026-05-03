@@ -45,13 +45,13 @@ class DiscordInteractionController extends Controller
     {
         $data = $request->json('data');
         $options = $data['options'] ?? [];
-        $topic = collect($options)->firstWhere('name', 'topic')['value'] ?? null;
+        $topic = collect($options)->firstWhere('name', 'topic')['value'] ?? '';
         $initialAi = collect($options)->firstWhere('name', 'model')['value'] ?? null;
         $applicationId = $request->json('application_id');
         $token = $request->json('token');
 
         // 非同期Jobをディスパッチして即座にDEFERREDを返す
-        StartDebateJob::dispatch($topic, $initialAi, $bot, $applicationId, $token);
+        StartDebateJob::dispatch((string)$topic, $initialAi, $bot, $applicationId, $token);
 
         return response()->json([
             'type' => 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
@@ -141,7 +141,13 @@ class DiscordInteractionController extends Controller
         }
 
         // 確実にジョブをディスパッチ
-        \Log::info('Dispatching intervene job', ['target' => $targetId, 'query' => $query]);
+        \Log::info('Dispatching intervene job', [
+            'session_id' => $session->id,
+            'target' => $targetId,
+            'target_ai_enum' => $targetAi->value,
+            'query' => $query,
+            'queue_connection' => config('queue.default'),
+        ]);
 
         \App\Presentation\Jobs\ProcessDebateTurn::dispatch(
             $session->id,
@@ -150,6 +156,8 @@ class DiscordInteractionController extends Controller
             null, // replyToMessageId
             true  // isHumanIntervention
         );
+
+        \Log::info('Intervene job dispatched successfully');
 
         return response()->json([
             'type' => 4,
