@@ -85,8 +85,18 @@ class DiscordInteractionController extends Controller
     {
         $data = $request->json('data');
         $options = $data['options'] ?? [];
-        $targetStr = collect($options)->firstWhere('name', 'target')['value'] ?? '';
-        $message = collect($options)->firstWhere('name', 'message')['value'] ?? '';
+        
+        $targetStr = '';
+        $message = '';
+
+        foreach ($options as $option) {
+            if ($option['name'] === 'target') {
+                $targetStr = (string)$option['value'];
+            } elseif ($option['name'] === 'message') {
+                $message = (string)$option['value'];
+            }
+        }
+
         $channelId = $request->json('channel_id');
 
         // チャンネルIDからセッションを特定
@@ -96,7 +106,10 @@ class DiscordInteractionController extends Controller
         if (!$session) {
             return response()->json([
                 'type' => 4,
-                'data' => ['content' => 'このチャンネルでは有効なディベートセッションが見つかりませんでした。']
+                'data' => [
+                    'content' => 'このチャンネルでは有効なディベートセッションが見つかりませんでした。',
+                    'flags' => 64 // EPHEMERAL
+                ]
             ]);
         }
 
@@ -105,11 +118,12 @@ class DiscordInteractionController extends Controller
             ?? \App\Domain\Enums\TargetAi::tryFrom($targetStr);
 
         if (!$targetAi) {
-            // 見つからない場合は ID 文字列そのものがメンションとして機能することを期待するか、エラーにする。
-            // ここでは安全のため、Enumとして特定できない場合はエラーを返す。
             return response()->json([
                 'type' => 4,
-                'data' => ['content' => "ターゲットAI「{$targetStr}」を特定できませんでした。"]
+                'data' => [
+                    'content' => "ターゲットAI「{$targetStr}」を特定できませんでした。",
+                    'flags' => 64 // EPHEMERAL
+                ]
             ]);
         }
 
@@ -123,7 +137,10 @@ class DiscordInteractionController extends Controller
         );
 
         return response()->json([
-            'type' => 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+            'type' => 4,
+            'data' => [
+                'content' => '介入指示を受け付けました。AIの応答をお待ちください。'
+            ]
         ]);
     }
 }

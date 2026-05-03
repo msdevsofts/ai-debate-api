@@ -65,7 +65,12 @@ class DiscordInterveneInteractionTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJson(['type' => 5]);
+            ->assertJson([
+                'type' => 4,
+                'data' => [
+                    'content' => '介入指示を受け付けました。AIの応答をお待ちください。'
+                ]
+            ]);
 
         Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $message) {
             return $job->debateSessionId === $sessionId &&
