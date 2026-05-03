@@ -21,22 +21,24 @@ class DifyApiAdapter
 
     public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic, bool $isHumanIntervention = false): array
     {
-        Log::info('Dify Request Query: ', ['query' => $query]);
+        $payload = [
+            'inputs' => [
+                'target_ai' => $targetAi->value,
+                'topic' => $topic,
+                'is_human_intervention' => $isHumanIntervention,
+            ],
+            'query' => $query,
+            'response_mode' => 'blocking',
+            'user' => 'debate-system',
+            'conversation_id' => $conversationId,
+        ];
+
+        Log::info('Dify Request Full Payload: ', $payload);
 
         $response = Http::withToken($this->apiKey)
             ->timeout(1000)
             ->connectTimeout(60)
-            ->post("{$this->baseUrl}/chat-messages", [
-                'inputs' => [
-                    'target_ai' => $targetAi->value,
-                    'topic' => $topic,
-                    'is_human_intervention' => $isHumanIntervention,
-                ],
-                'query' => $query,
-                'response_mode' => 'blocking',
-                'user' => 'debate-system',
-                'conversation_id' => $conversationId,
-            ]);
+            ->post("{$this->baseUrl}/chat-messages", $payload);
 
         if ($response->failed()) {
             Log::error('Dify API Error', [

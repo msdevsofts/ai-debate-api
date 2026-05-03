@@ -27,16 +27,13 @@ class ProcessDebateTurn implements ShouldQueue
      */
     public int $tries = 3;
 
-    public ?TargetAi $targetAi = null;
-
     public function __construct(
         public readonly int $debateSessionId,
-        ?TargetAi $targetAi = null,
+        public readonly ?TargetAi $targetAi = null,
         public readonly ?string $query = null,
         public readonly ?string $replyToMessageId = null,
         public readonly bool $isHumanIntervention = false
     ) {
-        $this->targetAi = $targetAi;
     }
 
     public function handle(ProcessDebateTurnUseCase $useCase): void
@@ -44,17 +41,33 @@ class ProcessDebateTurn implements ShouldQueue
         Log::info('ProcessDebateTurn Job Handling Started', [
             'session_id' => $this->debateSessionId,
             'target_ai' => $this->targetAi?->value,
+            'query' => $this->query,
+            'reply_to' => $this->replyToMessageId,
             'is_human_intervention' => $this->isHumanIntervention,
+            'queue_connection' => config('queue.default'),
+            'all_properties' => get_object_vars($this),
         ]);
 
-        // targetAi が null の場合は execute 内でローテーションロジックが走る
-        $useCase->execute(
-            $this->debateSessionId,
-            $this->targetAi,
-            $this->query,
-            $this->replyToMessageId,
-            $this->isHumanIntervention
-        );
+        try {
+            // targetAi が null の場合は execute 内でローテーションロジックが走る
+            $useCase->execute(
+                $this->debateSessionId,
+                $this->targetAi,
+                $this->query,
+                $this->replyToMessageId,
+                $this->isHumanIntervention
+            );
+
+            Log::info('ProcessDebateTurn Job Completed Successfully', [
+                'session_id' => $this->debateSessionId,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('ProcessDebateTurn Job Execution Error', [
+                'session_id' => $this->debateSessionId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
     /**

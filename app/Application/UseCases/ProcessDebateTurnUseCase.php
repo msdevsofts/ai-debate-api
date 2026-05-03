@@ -37,6 +37,11 @@ class ProcessDebateTurnUseCase
 
         $session = $this->repository->findById($sessionId);
         if (!$session || $session->isCompleted()) {
+            \Illuminate\Support\Facades\Log::warning('ProcessDebateTurnUseCase: Session not found or already completed', [
+                'session_id' => $sessionId,
+                'exists' => (bool)$session,
+                'is_completed' => $session?->isCompleted()
+            ]);
             return;
         }
 
@@ -52,6 +57,12 @@ class ProcessDebateTurnUseCase
         }
 
         try {
+            \Illuminate\Support\Facades\Log::info('ProcessDebateTurnUseCase: Calling Dify API', [
+                'target_ai' => $targetAi->value,
+                'query_length' => strlen($query ?? ''),
+                'is_human_intervention' => $isHumanIntervention
+            ]);
+
             // Dify API呼び出し
             $response = $this->difyAdapter->chat(
                 $query,
