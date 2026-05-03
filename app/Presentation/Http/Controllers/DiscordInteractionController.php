@@ -156,7 +156,7 @@ class DiscordInteractionController extends Controller
         return response()->json([
             'type' => 4,
             'data' => [
-                'content' => '介入指示を受け付けました。AIの応答をお待ちください。'
+                'content' => "【介入指示】\n{$messageText}\n\n介入指示を受け付けました。AIの応答をお待ちください。"
             ]
         ]);
     }
