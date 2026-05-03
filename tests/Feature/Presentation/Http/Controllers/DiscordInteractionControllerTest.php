@@ -15,10 +15,7 @@ class DiscordInteractionControllerTest extends TestCase
     {
         $response = $this->postJson('/api/discord/interactions', [
             'type' => 1
-        ], [
-            'X-Signature-Ed25519' => 'dummy',
-            'X-Signature-Timestamp' => '12345',
-        ]);
+        ], $this->getDiscordHeaders());
 
         $response->assertStatus(200)
             ->assertJson(['type' => 1]);
@@ -46,10 +43,7 @@ class DiscordInteractionControllerTest extends TestCase
                     ]
                 ]
             ]
-        ], [
-            'X-Signature-Ed25519' => 'dummy',
-            'X-Signature-Timestamp' => '12345',
-        ]);
+        ], $this->getDiscordHeaders());
 
         $response->assertStatus(200)
             ->assertJson([
@@ -88,10 +82,7 @@ class DiscordInteractionControllerTest extends TestCase
                     ]
                 ]
             ]
-        ], [
-            'X-Signature-Ed25519' => 'dummy',
-            'X-Signature-Timestamp' => '12345',
-        ]);
+        ], $this->getDiscordHeaders());
 
         $response->assertStatus(200);
 
@@ -118,10 +109,7 @@ class DiscordInteractionControllerTest extends TestCase
                     ]
                 ]
             ]
-        ], [
-            'X-Signature-Ed25519' => 'dummy',
-            'X-Signature-Timestamp' => '12345',
-        ]);
+        ], $this->getDiscordHeaders());
 
         $response->assertStatus(200);
 

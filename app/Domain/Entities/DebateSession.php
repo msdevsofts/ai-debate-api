@@ -32,12 +32,7 @@ class DebateSession
         }
 
         // 司会(Gemini)を除いた参加者のリスト
-        $participants = [
-            TargetAi::GEMMA,
-            TargetAi::PHI,
-            TargetAi::LLAMA,
-            TargetAi::GPT_OSS_Q2,
-        ];
+        $participants = self::getParticipants();
 
         // 1ターン目以降は参加者が順番に発言する
         // (currentTurn - 1) % count($participants) で司会以外のAIをローテーション
@@ -47,6 +42,19 @@ class DebateSession
         }
 
         return $participants[$index];
+    }
+
+    /**
+     * @return TargetAi[]
+     */
+    public static function getParticipants(): array
+    {
+        return [
+            TargetAi::GEMMA,
+            TargetAi::PHI,
+            TargetAi::LLAMA,
+            TargetAi::GPT_OSS_Q2,
+        ];
     }
 
     public function incrementTurn(): void

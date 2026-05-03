@@ -27,11 +27,11 @@ class DiscordMessageController extends Controller
             return response()->json(['status' => 'ignored']);
         }
 
-        $content = $data['content'] ?? '';
-        $channelId = $data['channel_id'] ?? '';
-        $messageId = $data['id'] ?? '';
+        $content = (string)($data['content'] ?? '');
+        $channelId = (string)($data['channel_id'] ?? '');
+        $messageId = (string)($data['id'] ?? '');
 
-        if (empty($content) || empty($channelId)) {
+        if ($content === '' || $channelId === '') {
             return response()->json(['message' => 'Invalid data'], 400);
         }
 
@@ -44,24 +44,22 @@ class DiscordMessageController extends Controller
         // 3. メッセージ内にAIへのメンション（<@ID>）が含まれているかチェック
         $targetAi = null;
         if (preg_match('/<@!?(\d+)>/', $content, $matches)) {
-            $targetAi = TargetAi::fromBotId($matches[1]);
+            $targetAi = \App\Domain\Enums\TargetAi::fromBotId($matches[1]);
         }
 
-        $isHumanIntervention = false;
+        // 4. クエリの準備
+        $query = $content;
+        $isHumanIntervention = true;
 
-        // 4. メンションが含まれていない場合は「人間の割込み（ツッコミ）」と判定
-        if ($targetAi === null) {
-            // デフォルトで Gemini に返答させる
-            $targetAi = TargetAi::GEMINI;
-            $query = $content; // 人間の発言内容をそのままコンテキストに含める
-            $isHumanIntervention = true;
-        } else {
+        if ($targetAi !== null) {
             // メンションがある場合は、そのメンション部分を除去してクエリとする
             $query = trim(preg_replace('/<@!?\d+>/', '', $content));
-            if (empty($query)) {
+            if ($query === '') {
                 $query = $session->topic;
             }
-            $isHumanIntervention = true;
+        } else {
+            // メンションが含まれていない場合は、デフォルトで Gemini に返答させる
+            $targetAi = \App\Domain\Enums\TargetAi::GEMINI;
         }
 
         // 5. Jobをディスパッチ

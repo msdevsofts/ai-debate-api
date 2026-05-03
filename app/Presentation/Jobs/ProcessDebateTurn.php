@@ -20,7 +20,7 @@ class ProcessDebateTurn implements ShouldQueue
     /**
      * タイムアウト時間を設定 (Dify APIの応答待ち時間に合わせる)
      */
-    public int $timeout = 1100;
+    public int $timeout = 120;
 
     /**
      * リトライ回数を制限

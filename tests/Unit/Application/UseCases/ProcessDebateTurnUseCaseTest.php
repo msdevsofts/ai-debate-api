@@ -27,17 +27,14 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         Queue::fake();
 
         $sessionId = 1;
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'AIの未来について',
-            initialAi: null,
-            discordChannelId: '123456',
-            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
-            currentTurn: 0,
-            maxTurns: 10,
-            difyConversationId: null,
-            status: 'running'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'AIの未来について',
+            'discordChannelId' => '123456',
+            'discordWebhookUrl' => 'https://discord.com/api/webhooks/123/abc',
+            'currentTurn' => 0,
+            'maxTurns' => 10,
+        ]);
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
@@ -61,7 +58,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
         $formatter->shouldReceive('format')->andReturn('AIの未来は明るいです。 <@111>');
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+        $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId);
@@ -80,17 +77,15 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         Queue::fake();
 
         $sessionId = 1;
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'AIの未来について',
-            initialAi: null,
-            discordChannelId: '123456',
-            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
-            currentTurn: 10, // Max turns reached
-            maxTurns: 10,
-            difyConversationId: 'conv_123',
-            status: 'running'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'AIの未来について',
+            'discordChannelId' => '123456',
+            'discordWebhookUrl' => 'https://discord.com/api/webhooks/123/abc',
+            'currentTurn' => 10,
+            'maxTurns' => 10,
+            'difyConversationId' => 'conv_123',
+        ]);
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
@@ -111,7 +106,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(null);
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+        $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId);
@@ -133,17 +128,14 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         config(['services.discord.bot_ids' => ['999888777' => 'phi']]);
 
         $sessionId = 1;
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'AIの未来について',
-            initialAi: null,
-            discordChannelId: '123456',
-            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
-            currentTurn: 0,
-            maxTurns: 10,
-            difyConversationId: null,
-            status: 'running'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'AIの未来について',
+            'discordChannelId' => '123456',
+            'discordWebhookUrl' => 'https://discord.com/api/webhooks/123/abc',
+            'currentTurn' => 0,
+            'maxTurns' => 10,
+        ]);
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
@@ -160,7 +152,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
         $formatter->shouldReceive('format')->andReturn($answerWithMention);
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+        $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId);
@@ -181,17 +173,14 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         Queue::fake();
 
         $sessionId = 1;
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'AIの未来について',
-            initialAi: null,
-            discordChannelId: '123456',
-            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
-            currentTurn: 0,
-            maxTurns: 10,
-            difyConversationId: null,
-            status: 'running'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'AIの未来について',
+            'discordChannelId' => '123456',
+            'discordWebhookUrl' => 'https://discord.com/api/webhooks/123/abc',
+            'currentTurn' => 0,
+            'maxTurns' => 10,
+        ]);
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
@@ -208,7 +197,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(null);
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+        $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         // targetAiにPHIを指定して実行
@@ -229,17 +218,14 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         Queue::fake();
 
         $sessionId = 1;
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'AIの未来について',
-            initialAi: null,
-            discordChannelId: '123456',
-            discordWebhookUrl: 'https://discord.com/api/webhooks/123/abc',
-            currentTurn: 0,
-            maxTurns: 10,
-            difyConversationId: null,
-            status: 'running'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'AIの未来について',
+            'discordChannelId' => '123456',
+            'discordWebhookUrl' => 'https://discord.com/api/webhooks/123/abc',
+            'currentTurn' => 0,
+            'maxTurns' => 10,
+        ]);
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
@@ -256,7 +242,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(null); // 自己メンション時は null が返る
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+        $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute($sessionId, TargetAi::PHI);
@@ -275,17 +261,16 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         Queue::fake();
 
         $sessionId = 1;
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'Original Topic',
-            initialAi: null,
-            discordChannelId: '123456',
-            discordWebhookUrl: 'http://webhook',
-            currentTurn: 1,
-            maxTurns: 10,
-            difyConversationId: 'conv-123',
-            status: 'active'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'Original Topic',
+            'discordChannelId' => '123456',
+            'discordWebhookUrl' => 'http://webhook',
+            'currentTurn' => 1,
+            'maxTurns' => 10,
+            'difyConversationId' => 'conv-123',
+            'status' => 'active',
+        ]);
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
@@ -309,7 +294,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(null);
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+        $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute(
@@ -330,17 +315,16 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         Queue::fake();
 
         $sessionId = 1;
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'Original Topic',
-            initialAi: null,
-            discordChannelId: '123456',
-            discordWebhookUrl: 'http://webhook',
-            currentTurn: 10,
-            maxTurns: 10,
-            difyConversationId: 'conv-123',
-            status: 'completed'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'Original Topic',
+            'discordChannelId' => '123456',
+            'discordWebhookUrl' => 'http://webhook',
+            'currentTurn' => 10,
+            'maxTurns' => 10,
+            'difyConversationId' => 'conv-123',
+            'status' => 'completed',
+        ]);
 
         $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
 
@@ -376,7 +360,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $formatter = new DiscordMessageFormatter();
 
-        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+        $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
         // Execute
         $useCase->execute(
@@ -387,5 +371,13 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         );
 
         $this->assertFalse($session->isCompleted(), 'Session should not be completed after intervention');
+    }
+    private function setupUseCase(
+        Mockery\MockInterface $repository,
+        Mockery\MockInterface $difyAdapter,
+        Mockery\MockInterface $discordAdapter,
+        Mockery\MockInterface|DiscordMessageFormatter $formatter
+    ): ProcessDebateTurnUseCase {
+        return new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
     }
 }

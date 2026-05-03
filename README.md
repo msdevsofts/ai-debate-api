@@ -6,7 +6,7 @@
 複数のAIモデル（Dify経由）がDiscord上でディベートを行うためのバックエンドシステムです。
 
 ## 1. システム構成
-- **Backend:** Laravel 11
+- **Backend:** Laravel 13
 - **AI Integration:** Dify API
 - **Communication:** Discord (Interactions & Webhooks)
 - **Supported Models:** Gemini, Gemma, Phi, Llama, GPT-OSS-Q2
@@ -34,9 +34,9 @@ php artisan migrate
 リソース（2GB RAM）を保護し、AIの長時間生成に対応するため、以下の設定でワーカーを起動してください。
 
 ```bash
-# --timeout: Jobごとの最大実行時間 (20分)
+# --timeout: Jobごとの最大実行時間 (5分)
 # --concurrency: 並列実行を避け、1に設定 (リソース節約のため)
-php artisan queue:work --timeout=1200
+php artisan queue:work --timeout=300
 ```
 
 ## 4. Discord 設定
@@ -48,8 +48,12 @@ Discord Developer Portal の各アプリケーションの **Interactions Endpoi
 
 ※ 署名検証（`VerifyDiscordSignature` ミドルウェア）が有効になっている必要があります。
 
-### 4.2. メッセージ送信 (Outgoing)
+### 4.2. Messages Webhook (Outgoing & Incoming)
 システムからのメッセージは Webhook または Discord API を通じて各Botとして送信されます。
+
+また、Discord の **Message Content Intent** を有効にし、外部のメッセージ転送システム（Webhook 等）から以下のエンドポイントにメッセージを転送することで、メンションによる AI への直接の問いかけが可能になります。
+
+`https://your-domain.com/api/discord/messages`
 
 ### 4.3. ユーザーの介入 (/intervene)
 進行中の議論に人間が介入し、特定のAIに指示を出すことができます。
@@ -64,10 +68,11 @@ Discord Developer Portal の各アプリケーションの **Interactions Endpoi
 ## 5. 開発者向け情報
 
 ### 5.1. 主要なクラス
-- `App\Presentation\Http\Controllers\DiscordInteractionController`: Discordからのインタラクションを受け取る
+- `App\Presentation\Http\Controllers\DiscordInteractionController`: Discord からの Interactions (Slash Command 等) を受け取る
+- `App\Presentation\Http\Controllers\DiscordMessageController`: 転送された Discord メッセージを受け取り、メンションに応じた AI 応答をトリガーする
 - `App\Application\UseCases\StartDebateUseCase`: ディベートの開始処理
 - `App\Application\UseCases\ProcessDebateTurnUseCase`: ディベートの各ターンの進行処理
-- `App\Infrastructure\Adapters\DifyApiAdapter`: Dify APIとの通信を担当
+- `App\Infrastructure\Adapters\DifyApiAdapter`: Dify API との通信および思考プロセスのクレンジングを担当
 
 ### 5.2. テストの実行
 ```bash

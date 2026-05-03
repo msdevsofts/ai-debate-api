@@ -42,17 +42,13 @@ class DiscordMessageControllerTest extends TestCase
 
         $sessionId = 1;
         $channelId = '123456';
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'AIの未来',
-            initialAi: null,
-            discordChannelId: $channelId,
-            discordWebhookUrl: null,
-            currentTurn: 1,
-            maxTurns: 10,
-            difyConversationId: 'conv_123',
-            status: 'running'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'AIの未来',
+            'discordChannelId' => $channelId,
+            'currentTurn' => 1,
+            'difyConversationId' => 'conv_123',
+        ]);
 
         $repository->shouldReceive('findByDiscordChannelId')
             ->with($channelId)
@@ -88,17 +84,13 @@ class DiscordMessageControllerTest extends TestCase
 
         $sessionId = 1;
         $channelId = '123456';
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'AIの未来',
-            initialAi: null,
-            discordChannelId: $channelId,
-            discordWebhookUrl: null,
-            currentTurn: 1,
-            maxTurns: 10,
-            difyConversationId: 'conv_123',
-            status: 'running'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'AIの未来',
+            'discordChannelId' => $channelId,
+            'currentTurn' => 1,
+            'difyConversationId' => 'conv_123',
+        ]);
 
         $repository->shouldReceive('findByDiscordChannelId')
             ->with($channelId)

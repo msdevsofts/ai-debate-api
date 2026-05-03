@@ -54,14 +54,14 @@ class DebateSessionRepository implements DebateSessionRepositoryInterface
     {
         return new DebateSession(
             id: $model->id,
-            topic: $model->topic,
+            topic: (string)$model->topic,
             initialAi: $model->initial_ai ? TargetAi::from($model->initial_ai) : null,
-            discordChannelId: $model->discord_channel_id,
-            discordWebhookUrl: $model->discord_webhook_url,
-            currentTurn: $model->current_turn,
-            maxTurns: $model->max_turns,
-            difyConversationId: $model->dify_conversation_id,
-            status: $model->status
+            discordChannelId: (string)$model->discord_channel_id,
+            discordWebhookUrl: (string)$model->discord_webhook_url,
+            currentTurn: (int)$model->current_turn,
+            maxTurns: (int)$model->max_turns,
+            difyConversationId: (string)$model->dify_conversation_id,
+            status: (string)$model->status
         );
     }
 }

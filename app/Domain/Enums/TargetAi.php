@@ -36,14 +36,13 @@ enum TargetAi: string
 
     public static function fromBotId(string $botId): ?self
     {
-        $botIds = config('services.discord.bot_ids', []);
+        $name = config("services.discord.bot_ids.{$botId}");
 
-        $botName = $botIds[$botId] ?? null;
-        if ($botName === null) {
+        if ($name === null) {
             return null;
         }
 
-        return match (strtolower((string)$botName)) {
+        return match (strtolower((string)$name)) {
             'gemma' => self::GEMMA,
             'phi' => self::PHI,
             'llama' => self::LLAMA,
@@ -67,7 +66,6 @@ enum TargetAi: string
 
     public function getBotId(): ?string
     {
-        $botIds = config('services.discord.bot_ids', []);
         $name = match ($this) {
             self::GEMMA => 'gemma',
             self::PHI => 'phi',
@@ -76,6 +74,7 @@ enum TargetAi: string
             self::GPT_OSS_Q2 => 'gpt_oss_q2',
         };
 
+        $botIds = config('services.discord.bot_ids', []);
         foreach ($botIds as $id => $botName) {
             $botNameLower = strtolower((string)$botName);
             if ($botNameLower === $name || ($this === self::GPT_OSS_Q2 && $botNameLower === 'gpt-oss-q2')) {
