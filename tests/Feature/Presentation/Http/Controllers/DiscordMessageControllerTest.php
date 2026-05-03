@@ -104,8 +104,9 @@ class DiscordMessageControllerTest extends TestCase
             ->with($channelId)
             ->andReturn($session);
 
-        // ラベルから判定するパスを試す
-        $content = '次は @Phi さんに聞きたいです。';
+        // IDから判定するパスを試す
+        $phiId = '1499775795067879436'; // Phi の ID
+        $content = "次は <@{$phiId}> さんに聞きたいです。";
 
         $response = $this->postJson('/api/discord/messages', [
             'data' => [

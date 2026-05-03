@@ -55,15 +55,11 @@ class DiscordMessageFormatter
 
             // 自己メンションのチェック
             if ($targetAi !== null && $targetAi === $currentAi) {
-                \Illuminate\Support\Facades\Log::warning("AI mentioned itself. Blocking self-loop and triggering random fallback.", [
+                \Illuminate\Support\Facades\Log::warning("AI mentioned itself. Blocking self-loop.", [
                     'bot_id' => $targetId,
-                    'ai' => $targetAi->value
+                    'ai' => $targetAi->value,
+                    'current_ai' => $currentAi->value
                 ]);
-                // 司会(Gemini)の最初のターンでの自己メンションはフォールバックさせる
-                // それ以外はnull（終了）を返す
-                if ($currentAi === TargetAi::GEMINI && $currentTurn <= 1) {
-                    return $this->getRandomFallbackAi($currentAi);
-                }
                 return null;
             }
 
@@ -73,18 +69,9 @@ class DiscordMessageFormatter
         }
 
         // メンションが見つからなかった、または自己メンションだった場合
-        \Illuminate\Support\Facades\Log::info("有効なメンションが見つからなかったため、フォールバック処理に移行します。");
+        \Illuminate\Support\Facades\Log::info("有効なメンションが見つからなかったため、ループを停止します。");
 
-        // 現在の発言者が「Gemini（司会）」である場合：意図的な議論終了
-        // ただし、最初のターン（currentTurn <= 1）は議論開始の挨拶なのでフォールバックさせる
-        if ($currentAi === TargetAi::GEMINI || $currentAi === TargetAi::GEMINI_CONCLUSION) {
-            if ($currentTurn <= 1) {
-                return $this->getRandomFallbackAi($currentAi);
-            }
-            return null;
-        }
-
-        return $this->getRandomFallbackAi($currentAi);
+        return null;
     }
 
     /**

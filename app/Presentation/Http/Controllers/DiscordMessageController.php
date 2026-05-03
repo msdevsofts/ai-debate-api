@@ -41,8 +41,12 @@ class DiscordMessageController extends Controller
             return response()->json(['message' => 'Session not found or completed'], 200);
         }
 
-        // 3. メッセージ内にAIへのメンションが含まれているかチェック
-        $targetAi = TargetAi::fromMention($content);
+        // 3. メッセージ内にAIへのメンション（<@ID>）が含まれているかチェック
+        $targetAi = null;
+        if (preg_match('/<@!?(\d+)>/', $content, $matches)) {
+            $targetAi = TargetAi::fromBotId($matches[1]);
+        }
+
         $isHumanIntervention = false;
 
         // 4. メンションが含まれていない場合は「人間の割込み（ツッコミ）」と判定
@@ -53,7 +57,7 @@ class DiscordMessageController extends Controller
             $isHumanIntervention = true;
         } else {
             // メンションがある場合は、そのメンション部分を除去してクエリとする
-            $query = trim(preg_replace('/<@!?([0-9]+)>/', '', $content));
+            $query = trim(preg_replace('/<@!?\d+>/', '', $content));
             if (empty($query)) {
                 $query = $session->topic;
             }
