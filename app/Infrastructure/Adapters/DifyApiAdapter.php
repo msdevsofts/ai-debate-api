@@ -45,7 +45,12 @@ class DifyApiAdapter
         }
 
         $data = $response->json();
-        $data['answer'] = $this->cleanAnswer($data['answer'] ?? '');
+        $answer = $data['answer'] ?? '';
+
+        // リテラルの '\n' や '\r\n' を実際の改行コードに置換
+        $answer = str_replace(['\r\n', '\r', '\n'], "\n", $answer);
+
+        $data['answer'] = $this->cleanAnswer($answer);
 
         return $data;
     }
