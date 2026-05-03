@@ -82,11 +82,11 @@ php artisan test
 ## 6. ドキュメント
 システムに関する詳細なドキュメントは以下を参照してください。
 
-- [基本設計書](docs/basic_design.md)
-- [詳細設計書](docs/detail_design.md)
-- [DB設計書](docs/db_design.md)
-- [運用ドキュメント](docs/operation.md)
-- [Discordでの使い方](docs/discord_usage.md)
+- [基本設計書](docs/basic_design.md) (JetBrains AI (Junie) 作成)
+- [詳細設計書](docs/detail_design.md) (JetBrains AI (Junie) 作成)
+- [DB設計書](docs/db_design.md) (JetBrains AI (Junie) 作成)
+- [運用ドキュメント](docs/operation.md) (JetBrains AI (Junie) 作成)
+- [Discordでの使い方](docs/discord_usage.md) (JetBrains AI (Junie) 作成)
 
 ## 7. ライセンス
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

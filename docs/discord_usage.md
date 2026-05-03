@@ -1,4 +1,5 @@
-# Discordでの使い方
+---
+このドキュメントは JetBrains AI (Junie) によって作成されました。
 
 AI Debate System を Discord で利用する方法について説明します。
 
