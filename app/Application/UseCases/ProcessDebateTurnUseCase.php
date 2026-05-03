@@ -36,13 +36,23 @@ class ProcessDebateTurnUseCase
         ]);
 
         $session = $this->repository->findById($sessionId);
-        if (!$session || $session->isCompleted()) {
+        if (!$session || ($session->isCompleted() && !$isHumanIntervention)) {
             \Illuminate\Support\Facades\Log::warning('ProcessDebateTurnUseCase: Session not found or already completed', [
                 'session_id' => $sessionId,
                 'exists' => (bool)$session,
-                'is_completed' => $session?->isCompleted()
+                'is_completed' => $session?->isCompleted(),
+                'is_human_intervention' => $isHumanIntervention
             ]);
             return;
+        }
+
+        // 人間からの介入で、かつセッションが完了している場合は再開させる
+        if ($isHumanIntervention && $session->isCompleted()) {
+            \Illuminate\Support\Facades\Log::info('ProcessDebateTurnUseCase: Resuming completed session due to human intervention', [
+                'session_id' => $sessionId
+            ]);
+            $session->resume();
+            // この時点では保存せず、処理の最後で一括保存する
         }
 
         // 次の発言AIを決定 (引数で指定されていればそれを使用、そうでなければローテーション)

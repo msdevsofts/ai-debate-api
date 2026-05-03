@@ -64,6 +64,11 @@ class DebateSession
         $this->status = 'completed';
     }
 
+    public function resume(): void
+    {
+        $this->status = 'running';
+    }
+
     public function fail(): void
     {
         $this->status = 'failed';

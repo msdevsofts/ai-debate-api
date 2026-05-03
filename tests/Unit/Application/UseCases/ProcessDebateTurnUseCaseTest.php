@@ -321,4 +321,71 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $this->assertTrue(true); // 到達すればOK
     }
+
+    public function test_execute_allows_intervention_on_completed_session_and_resumes(): void
+    {
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'Original Topic',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'http://webhook',
+            currentTurn: 10,
+            maxTurns: 10,
+            difyConversationId: 'conv-123',
+            status: 'completed'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        // bot_idsの設定を追加
+        config(['services.discord.bot_ids' => [
+            '100' => 'gemma',
+            '101' => 'phi',
+            '102' => 'llama',
+            '103' => 'gemini',
+            '104' => 'gpt-oss-q2'
+        ]]);
+
+        $interventionQuery = "Restart debate";
+
+        // 介入がある場合は、セッションが完了していても chat が呼ばれるはず
+        $difyAdapter->shouldReceive('chat')->with(
+            $interventionQuery,
+            'conv-123',
+            TargetAi::GEMMA,
+            'Original Topic',
+            true // isHumanIntervention
+        )->once()->andReturn([
+            'answer' => 'Resuming. Next is <@101>',
+            'conversation_id' => 'conv-123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+
+        // セッションが再開（statusが更新）されて保存されることを期待
+        $repository->shouldReceive('save')->with(Mockery::on(function ($savedSession) {
+            return $savedSession->status === 'running';
+        }))->once();
+
+        $formatter = new DiscordMessageFormatter();
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+
+        // Execute
+        $useCase->execute(
+            sessionId: $sessionId,
+            targetAi: TargetAi::GEMMA,
+            query: $interventionQuery,
+            isHumanIntervention: true
+        );
+
+        $this->assertFalse($session->isCompleted(), 'Session should not be completed after intervention');
+    }
 }
