@@ -24,17 +24,15 @@ class DiscordInterveneInteractionTest extends TestCase
         $sessionId = 1;
 
         // リポジトリのモック作成
-        $session = new DebateSession(
-            id: $sessionId,
-            topic: 'テスト議題',
-            initialAi: TargetAi::GEMINI,
-            discordChannelId: $channelId,
-            discordWebhookUrl: 'http://webhook.url',
-            currentTurn: 1,
-            maxTurns: 10,
-            difyConversationId: 'dify-conv-id',
-            status: 'active'
-        );
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'テスト議題',
+            'initialAi' => TargetAi::GEMINI,
+            'discordChannelId' => $channelId,
+            'discordWebhookUrl' => 'http://webhook.url',
+            'currentTurn' => 1,
+            'status' => 'active'
+        ]);
 
         $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
         $repository->shouldReceive('findByDiscordChannelId')
@@ -59,10 +57,7 @@ class DiscordInterveneInteractionTest extends TestCase
                     ]
                 ]
             ]
-        ], [
-            'X-Signature-Ed25519' => 'dummy',
-            'X-Signature-Timestamp' => '12345',
-        ]);
+        ], $this->getDiscordHeaders());
 
         $response->assertStatus(200)
             ->assertJson([
@@ -103,10 +98,7 @@ class DiscordInterveneInteractionTest extends TestCase
                     ]
                 ]
             ]
-        ], [
-            'X-Signature-Ed25519' => 'dummy',
-            'X-Signature-Timestamp' => '12345',
-        ]);
+        ], $this->getDiscordHeaders());
 
         $response->assertStatus(200)
             ->assertJson([
@@ -143,10 +135,7 @@ class DiscordInterveneInteractionTest extends TestCase
                     ['name' => 'message', 'value' => 'hi']
                 ]
             ]
-        ], [
-            'X-Signature-Ed25519' => 'dummy',
-            'X-Signature-Timestamp' => '12345',
-        ]);
+        ], $this->getDiscordHeaders());
 
         $response->assertStatus(200)
             ->assertJson([

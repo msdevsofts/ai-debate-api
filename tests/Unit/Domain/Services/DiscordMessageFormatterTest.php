@@ -23,7 +23,7 @@ class DiscordMessageFormatterTest extends TestCase
             '222' => 'gemma',
             '333' => 'phi',
             '444' => 'llama',
-            '555' => 'gpt_oss_q2',
+            '555' => 'gpt-oss-q2', // アンダースコアをハイフンに修正（本番のボット名に合わせる）
         ]]);
     }
 

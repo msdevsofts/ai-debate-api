@@ -21,7 +21,7 @@ class DifyApiAdapterTrimmingTest extends TestCase
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
 
         // 2. Execute
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
@@ -39,7 +39,7 @@ class DifyApiAdapterTrimmingTest extends TestCase
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         $this->assertEquals('Correct answer', $result['answer']);
@@ -54,7 +54,7 @@ class DifyApiAdapterTrimmingTest extends TestCase
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         $this->assertEquals('Actual answer here', $result['answer']);
@@ -69,7 +69,7 @@ class DifyApiAdapterTrimmingTest extends TestCase
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         // 現在のユーザーの実装ではここが通らない可能性がある
@@ -85,7 +85,7 @@ class DifyApiAdapterTrimmingTest extends TestCase
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         $this->assertEquals('Final conclusion', $result['answer']);
@@ -110,7 +110,7 @@ EOD;
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         $this->assertEquals('Final actual response', $result['answer']);
@@ -138,7 +138,7 @@ EOD;
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         // Check if common remnants are removed
@@ -164,7 +164,7 @@ EOD;
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         $this->assertEquals('Final clean response', $result['answer']);
@@ -179,7 +179,7 @@ EOD;
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         $this->assertEquals('（AIが思考のみを出力しました。結論を生成中です...）', $result['answer']);
@@ -194,7 +194,7 @@ EOD;
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         // [ENDTHINKFLAG] より前が抽出される（300文字以内）
@@ -211,11 +211,15 @@ EOD;
             ], 200)
         ]);
 
-        $adapter = new DifyApiAdapter();
+        $adapter = $this->createAdapter();
         $result = $adapter->chat('query', null, TargetAi::GEMMA, 'topic');
 
         // 最後の思考ブロックが300文字に制限される
         $this->assertEquals(300, mb_strlen($result['answer']));
         $this->assertStringContainsString('Long thought process...', $result['answer']);
+    }
+    private function createAdapter(): DifyApiAdapter
+    {
+        return new DifyApiAdapter();
     }
 }
