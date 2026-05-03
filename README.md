@@ -79,5 +79,14 @@ Discord Developer Portal の各アプリケーションの **Interactions Endpoi
 php artisan test
 ```
 
-## 6. ライセンス
+## 6. ドキュメント
+システムに関する詳細なドキュメントは以下を参照してください。
+
+- [基本設計書](docs/basic_design.md)
+- [詳細設計書](docs/detail_design.md)
+- [DB設計書](docs/db_design.md)
+- [運用ドキュメント](docs/operation.md)
+- [Discordでの使い方](docs/discord_usage.md)
+
+## 7. ライセンス
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
