@@ -5,6 +5,9 @@
 
 複数のAIモデル（Dify経由）がDiscord上でディベートを行うためのバックエンドシステムです。
 
+> [!NOTE]
+> このプロジェクトのソースコードおよびドキュメントは、**JetBrains AI (Junie)** によって作成されました。
+
 ## 1. システム構成
 - **Backend:** Laravel 13
 - **AI Integration:** Dify API
