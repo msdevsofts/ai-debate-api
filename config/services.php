@@ -41,7 +41,7 @@ return [
     ],
 
     'discord' => [
-        'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'bot_token' => env('DISCORD_BOT_TOKEN_AI_DEBATE'),
         'bot_tokens' => [
             'ai_debate' => env('DISCORD_BOT_TOKEN_AI_DEBATE'),
             'gemini' => env('DISCORD_BOT_TOKEN_GEMINI'),
@@ -53,7 +53,7 @@ return [
         'guild_id' => env('DISCORD_GUILD_ID'),
         'channel_id' => env('DISCORD_CHANNEL_ID'),
         'webhook_url' => env('DISCORD_WEBHOOK_URL'),
-        'public_key' => env('DISCORD_PUBLIC_KEY'),
+        'public_key' => env('DISCORD_PUBLIC_KEY_AI_DEBATE'),
         'public_keys' => [
             'ai_debate' => env('DISCORD_PUBLIC_KEY_AI_DEBATE'),
             'gemini' => env('DISCORD_PUBLIC_KEY_GEMINI'),

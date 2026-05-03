@@ -77,7 +77,8 @@ enum TargetAi: string
         };
 
         foreach ($botIds as $id => $botName) {
-            if (strtolower((string)$botName) === $name) {
+            $botNameLower = strtolower((string)$botName);
+            if ($botNameLower === $name || ($this === self::GPT_OSS_Q2 && $botNameLower === 'gpt-oss-q2')) {
                 return (string)$id;
             }
         }

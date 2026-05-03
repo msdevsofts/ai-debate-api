@@ -29,6 +29,7 @@ class ProcessDebateTurnUseCase
 
         // 次の発言AIを決定 (引数で指定されていればそれを使用、そうでなければローテーション)
         $targetAi = $targetAi ?? $session->getNextAi();
+        $originalTargetAi = $targetAi; // 現在の発言者を保持
         $query = $query ?? $session->topic;
 
         try {
@@ -48,29 +49,30 @@ class ProcessDebateTurnUseCase
             $content = $response['answer'] ?? '';
 
             // メンション検知と次発言者の決定
-            $nextAi = $this->messageFormatter->extractNextAi($content, $targetAi);
+            $targetAi = $this->messageFormatter->extractNextAi($content, $targetAi);
 
             // Discordメッセージのテキスト書き換え（メンションの同期）
-            if ($nextAi) {
-                $content = $this->messageFormatter->format($content, $nextAi);
+            if ($targetAi) {
+                $content = $this->messageFormatter->format($content, $targetAi);
             }
 
             // Discordメッセージ投稿
-            $this->discordAdapter->postMessage($content, $session->discordChannelId, $targetAi, $replyToMessageId);
+            // 送信主は $originalTargetAi、本文 $content 内のメンションは $targetAi (次の発言者) に同期済み
+            $this->discordAdapter->postMessage($content, $session->discordChannelId, $originalTargetAi, $replyToMessageId);
 
             // ターンをインクリメント
             $session->incrementTurn();
 
             // 終了判定
-            if ($targetAi->value === 'gemini_conclusion' || ($nextAi === null && $targetAi->value === 'gemini')) {
+            if ($targetAi === null || $targetAi->value === 'gemini_conclusion' || ($targetAi->value === 'gemini' && $originalTargetAi->value === 'gemini')) {
                 $session->complete();
             }
 
             $this->repository->save($session);
 
-            if ($nextAi && !$session->isCompleted()) {
+            if ($targetAi && !$session->isCompleted()) {
                 // 決定されたAIをターゲットにして10秒後に実行
-                ProcessDebateTurn::dispatch($session->id, $nextAi)->delay(now()->addSeconds(10));
+                ProcessDebateTurn::dispatch($session->id, $targetAi)->delay(now()->addSeconds(10));
             }
         } catch (\Exception $e) {
             $session->fail();
