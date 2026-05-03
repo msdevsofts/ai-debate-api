@@ -73,11 +73,51 @@ class DiscordInterveneInteractionTest extends TestCase
             ]);
 
         Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $message) {
+            $expectedMessage = "【システム管理者（人間）からの最優先の介入指示】\n" . $message;
             return $job->debateSessionId === $sessionId &&
                    $job->targetAi === TargetAi::GEMMA &&
-                   $job->query === $message &&
+                   $job->query === $expectedMessage &&
                    $job->isHumanIntervention === true;
         });
+    }
+
+    public function test_handle_intervene_command_returns_error_if_message_is_empty(): void
+    {
+        Queue::fake();
+
+        $channelId = '1234567890';
+
+        $response = $this->postJson("/api/discord/interactions?bot=gemini", [
+            'type' => 2,
+            'channel_id' => $channelId,
+            'data' => [
+                'name' => 'intervene',
+                'options' => [
+                    [
+                        'name' => 'target',
+                        'value' => 'gemma'
+                    ],
+                    [
+                        'name' => 'message',
+                        'value' => ''
+                    ]
+                ]
+            ]
+        ], [
+            'X-Signature-Ed25519' => 'dummy',
+            'X-Signature-Timestamp' => '12345',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'type' => 4,
+                'data' => [
+                    'content' => '指示内容が空です。メッセージを入力してください。',
+                    'flags' => 64
+                ]
+            ]);
+
+        Queue::assertNothingPushed();
     }
 
     public function test_handle_intervene_command_returns_error_if_session_not_found(): void

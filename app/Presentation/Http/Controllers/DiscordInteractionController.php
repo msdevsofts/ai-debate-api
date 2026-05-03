@@ -97,6 +97,19 @@ class DiscordInteractionController extends Controller
             }
         }
 
+        if (empty($message)) {
+            return response()->json([
+                'type' => 4,
+                'data' => [
+                    'content' => '指示内容が空です。メッセージを入力してください。',
+                    'flags' => 64 // EPHEMERAL
+                ]
+            ]);
+        }
+
+        // 人間からの指示であることを強調するための装飾
+        $decoratedMessage = "【システム管理者（人間）からの最優先の介入指示】\n" . $message;
+
         $channelId = $request->json('channel_id');
 
         // チャンネルIDからセッションを特定
@@ -131,7 +144,7 @@ class DiscordInteractionController extends Controller
         \App\Presentation\Jobs\ProcessDebateTurn::dispatch(
             $session->id,
             $targetAi,
-            $message,
+            $decoratedMessage,
             null, // replyToMessageId
             true  // isHumanIntervention
         );
