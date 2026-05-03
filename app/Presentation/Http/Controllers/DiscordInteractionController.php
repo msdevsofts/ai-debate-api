@@ -83,21 +83,21 @@ class DiscordInteractionController extends Controller
      */
     private function handleInterveneCommand(Request $request, string $bot): JsonResponse
     {
-        $data = $request->json('data');
-        $options = $data['options'] ?? [];
-        
-        $targetStr = '';
-        $message = '';
+        $data = $request->json()->all();
+        $targetId = null;
+        $messageText = '';
+        $options = $data['data']['options'] ?? [];
 
-        foreach ($options as $option) {
-            if ($option['name'] === 'target') {
-                $targetStr = (string)$option['value'];
-            } elseif ($option['name'] === 'message') {
-                $message = (string)$option['value'];
+        foreach ($options as $opt) {
+            if ($opt['name'] === 'target') {
+                $targetId = (string)$opt['value'];
+            }
+            if ($opt['name'] === 'message') {
+                $messageText = (string)$opt['value'];
             }
         }
 
-        if (empty($message)) {
+        if (empty($messageText)) {
             return response()->json([
                 'type' => 4,
                 'data' => [
@@ -108,9 +108,9 @@ class DiscordInteractionController extends Controller
         }
 
         // 人間からの指示であることを強調するための装飾
-        $decoratedMessage = "【システム管理者（人間）からの最優先の介入指示】\n" . $message;
+        $query = "【システム管理者（人間）からの最優先の介入指示】\n" . $messageText;
 
-        $channelId = $request->json('channel_id');
+        $channelId = $data['channel_id'] ?? null;
 
         // チャンネルIDからセッションを特定
         $repository = app(\App\Domain\Repositories\DebateSessionRepositoryInterface::class);
@@ -127,30 +127,26 @@ class DiscordInteractionController extends Controller
         }
 
         // ターゲットAIの特定（IDまたは識別子から）
-        $targetAi = \App\Domain\Enums\TargetAi::fromBotId($targetStr)
-            ?? \App\Domain\Enums\TargetAi::tryFrom($targetStr);
+        $targetAi = \App\Domain\Enums\TargetAi::fromBotId($targetId)
+            ?? \App\Domain\Enums\TargetAi::tryFrom($targetId);
 
         if (!$targetAi) {
             return response()->json([
                 'type' => 4,
                 'data' => [
-                    'content' => "ターゲットAI「{$targetStr}」を特定できませんでした。",
+                    'content' => "ターゲットAI「{$targetId}」を特定できませんでした。",
                     'flags' => 64 // EPHEMERAL
                 ]
             ]);
         }
 
-        // 非同期Jobをディスパッチ
-        \Log::info('Dispatching ProcessDebateTurn Job', [
-            'session_id' => $session->id,
-            'target_ai' => $targetAi->value,
-            'is_human_intervention' => true
-        ]);
+        // 確実にジョブをディスパッチ
+        \Log::info('Dispatching intervene job', ['target' => $targetId, 'query' => $query]);
 
         \App\Presentation\Jobs\ProcessDebateTurn::dispatch(
             $session->id,
             $targetAi,
-            $decoratedMessage,
+            $query,
             null, // replyToMessageId
             true  // isHumanIntervention
         );
