@@ -266,4 +266,59 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $this->assertTrue($session->isCompleted());
         Queue::assertNotPushed(ProcessDebateTurn::class);
     }
+
+    public function test_execute_uses_query_without_overwriting_when_human_intervention(): void
+    {
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        $sessionId = 1;
+        $session = new DebateSession(
+            id: $sessionId,
+            topic: 'Original Topic',
+            initialAi: null,
+            discordChannelId: '123456',
+            discordWebhookUrl: 'http://webhook',
+            currentTurn: 1,
+            maxTurns: 10,
+            difyConversationId: 'conv-123',
+            status: 'active'
+        );
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        $interventionQuery = "Human instruction";
+
+        // 期待される挙動: $query が topic で上書きされないこと
+        $difyAdapter->shouldReceive('chat')->with(
+            $interventionQuery,
+            'conv-123',
+            TargetAi::GEMMA,
+            'Original Topic',
+            true // isHumanIntervention
+        )->once()->andReturn([
+            'answer' => 'Acknowledged.',
+            'conversation_id' => 'conv-123'
+        ]);
+
+        $discordAdapter->shouldReceive('postMessage')->once();
+        $repository->shouldReceive('save')->once();
+
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(null);
+
+        $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+
+        // Execute
+        $useCase->execute(
+            sessionId: $sessionId,
+            targetAi: TargetAi::GEMMA,
+            query: $interventionQuery,
+            isHumanIntervention: true
+        );
+
+        $this->assertTrue(true); // 到達すればOK
+    }
 }

@@ -21,6 +21,8 @@ class DifyApiAdapter
 
     public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic, bool $isHumanIntervention = false): array
     {
+        Log::info('Dify Request Query: ', ['query' => $query]);
+
         $response = Http::withToken($this->apiKey)
             ->timeout(1000)
             ->connectTimeout(60)

@@ -36,7 +36,13 @@ class ProcessDebateTurnUseCase
         // 次の発言AIを決定 (引数で指定されていればそれを使用、そうでなければローテーション)
         $targetAi = $targetAi ?? $session->getNextAi();
         $originalTargetAi = $targetAi; // 現在の発言者を保持
-        $query = $query ?? $session->topic;
+
+        // 人間からの介入（isHumanIntervention = true）の場合は、query が空であっても
+        // $session->topic で上書きせず、渡された値をそのまま（または空のまま）使用する。
+        // 通常のターンの場合は、query が空なら topic をデフォルトとして使用する。
+        if (!$isHumanIntervention) {
+            $query = $query ?? $session->topic;
+        }
 
         try {
             // Dify API呼び出し
