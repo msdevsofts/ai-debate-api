@@ -40,20 +40,25 @@ class ProcessDebateTurn implements ShouldQueue
 
     public function handle(ProcessDebateTurnUseCase $useCase): void
     {
-        try {
-            // targetAi が null の場合は execute 内でローテーションロジックが走る
-            $useCase->execute(
-                $this->debateSessionId,
-                $this->targetAi,
-                $this->query,
-                $this->replyToMessageId
-            );
-        } catch (\Exception $e) {
-            Log::error('ProcessDebateTurn Job Failed', [
-                'session_id' => $this->debateSessionId,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
+        // targetAi が null の場合は execute 内でローテーションロジックが走る
+        $useCase->execute(
+            $this->debateSessionId,
+            $this->targetAi,
+            $this->query,
+            $this->replyToMessageId
+        );
+    }
+
+    /**
+     * ジョブが失敗したときの処理
+     */
+    public function failed(\Throwable $e): void
+    {
+        Log::error('ProcessDebateTurn Job Failed permanently', [
+            'session_id' => $this->debateSessionId,
+            'target_ai' => $this->targetAi?->value,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
     }
 }

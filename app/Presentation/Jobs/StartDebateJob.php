@@ -31,20 +31,24 @@ class StartDebateJob implements ShouldQueue
 
     public function handle(StartDebateUseCase $useCase): void
     {
-        try {
-            $useCase->execute(
-                $this->topic,
-                $this->initialAi,
-                $this->triggerBot,
-                $this->applicationId,
-                $this->token
-            );
-        } catch (\Exception $e) {
-            Log::error('StartDebateJob Failed', [
-                'topic' => $this->topic,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
+        $useCase->execute(
+            $this->topic,
+            $this->initialAi,
+            $this->triggerBot,
+            $this->applicationId,
+            $this->token
+        );
+    }
+
+    /**
+     * ジョブが失敗したときの処理
+     */
+    public function failed(\Throwable $e): void
+    {
+        Log::error('StartDebateJob Failed permanently', [
+            'topic' => $this->topic,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
     }
 }
