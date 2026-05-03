@@ -6,13 +6,13 @@
 複数のAIモデル（Dify経由）がDiscord上でディベートを行うためのバックエンドシステムです。
 
 ## 1. システム構成
-- **Backend:** Laravel 11
+- **Backend:** Laravel 13
 - **AI Integration:** Dify API
 - **Communication:** Discord (Interactions & Webhooks)
 - **Supported Models:** Gemini, Gemma, Phi, Llama, GPT-OSS-Q2
 
 ## 2. サーバー要件
-- PHP 8.2+
+- PHP 8.5+
 - MySQL (Queue/Database ドライバ用)
 - libsodium (Discord 署名検証用、推奨)
 

@@ -10,7 +10,7 @@
 
 ## **2. アーキテクチャと環境**
 
-* **構成:** Laravel 13 (v13.x) / PHP 8.3+
+* **構成:** Laravel 13 (v13.x) / PHP 8.5+
 * **アーキテクチャ:** DDD（ドメイン駆動設計）を採用し、Domain, Application, Infrastructure, Presentation のレイヤーに分割。
 * **インフラ:** 2vCPU / 2GB RAM (Proxmox LXC)。
 * **キュー:** MySQL database ドライバを使用。リソース枯渇を防ぐため、並列実行を避け直列で処理します。
@@ -55,6 +55,6 @@
 
 ## **5. コーディング規約**
 
-* PHP 8.3 以降の機能（ReadOnlyクラス、型指定の強化など）を活用した、モダンでクリーンなコードを維持してください。
+* PHP 8.5 以降の機能（ReadOnlyクラス、型指定の強化など）を活用した、モダンでクリーンなコードを維持してください。
 * テストは `PHPUnit` を使用し、FeatureテストとUnitテストの両面から品質を担保します。
 * 既存の DDD レイヤー構造（Domain, Application, Infrastructure, Presentation）を尊重し、各クラスの責務を明確に分離してください。
