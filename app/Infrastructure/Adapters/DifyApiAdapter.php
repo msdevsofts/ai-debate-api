@@ -36,8 +36,8 @@ class DifyApiAdapter
         Log::info('Dify Request Full Payload: ', $payload);
 
         $response = Http::withToken($this->apiKey)
-            ->timeout(1000)
-            ->connectTimeout(60)
+            ->timeout(100) // 以前は 1000秒 だったが現実的な値へ
+            ->connectTimeout(10)
             ->post("{$this->baseUrl}/chat-messages", $payload);
 
         if ($response->failed()) {
@@ -45,14 +45,14 @@ class DifyApiAdapter
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
-            throw new \RuntimeException('Dify API call failed');
+            throw new \RuntimeException('Dify API call failed: ' . $response->status());
         }
 
         $data = $response->json();
         $answer = $data['answer'] ?? '';
 
         // リテラルの '\n' や '\r\n' を実際の改行コードに置換
-        $answer = str_replace(['\r\n', '\r', '\n'], "\n", $answer);
+        $answer = str_replace(['\r\n', '\r', '\n', '\\r\\n', '\\r', '\\n'], "\n", $answer);
 
         $data['answer'] = $this->cleanAnswer($answer);
 

@@ -43,15 +43,24 @@ class DiscordInteractionController extends Controller
 
     private function handleDiscussCommand(Request $request, string $bot): JsonResponse
     {
-        $data = $request->json('data');
-        $options = $data['options'] ?? [];
+        $options = $request->json('data.options', []);
         $topic = collect($options)->firstWhere('name', 'topic')['value'] ?? '';
         $initialAi = collect($options)->firstWhere('name', 'model')['value'] ?? null;
         $applicationId = $request->json('application_id');
         $token = $request->json('token');
 
+        if ($topic === '') {
+            return response()->json(['message' => 'Topic is required'], 400);
+        }
+
         // 非同期Jobをディスパッチして即座にDEFERREDを返す
-        StartDebateJob::dispatch((string)$topic, $initialAi, $bot, $applicationId, $token);
+        StartDebateJob::dispatch(
+            (string)$topic,
+            $initialAi ? (string)$initialAi : null,
+            $bot,
+            $applicationId ? (string)$applicationId : null,
+            $token ? (string)$token : null
+        );
 
         return response()->json([
             'type' => 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
@@ -83,21 +92,11 @@ class DiscordInteractionController extends Controller
      */
     private function handleInterveneCommand(Request $request, string $bot): JsonResponse
     {
-        $data = $request->json()->all();
-        $targetId = null;
-        $messageText = '';
-        $options = $data['data']['options'] ?? [];
+        $options = $request->json('data.options', []);
+        $targetId = (string)(collect($options)->firstWhere('name', 'target')['value'] ?? '');
+        $messageText = (string)(collect($options)->firstWhere('name', 'message')['value'] ?? '');
 
-        foreach ($options as $opt) {
-            if ($opt['name'] === 'target') {
-                $targetId = (string)$opt['value'];
-            }
-            if ($opt['name'] === 'message') {
-                $messageText = (string)$opt['value'];
-            }
-        }
-
-        if (empty($messageText)) {
+        if ($messageText === '') {
             return response()->json([
                 'type' => 4,
                 'data' => [
@@ -107,12 +106,8 @@ class DiscordInteractionController extends Controller
             ]);
         }
 
-        // 人間からの指示であることを強調するための装飾
-        $query = "【システム管理者（人間）からの最優先の介入指示】\n" . $messageText;
-
-        $channelId = $data['channel_id'] ?? null;
-
         // チャンネルIDからセッションを特定
+        $channelId = $request->json('channel_id');
         $repository = app(\App\Domain\Repositories\DebateSessionRepositoryInterface::class);
         $session = $repository->findByDiscordChannelId((string)$channelId);
 
@@ -140,13 +135,14 @@ class DiscordInteractionController extends Controller
             ]);
         }
 
-        // 確実にジョブをディスパッチ
+        // 人間からの指示であることを強調するための装飾
+        $query = "【システム管理者（人間）からの最優先の介入指示】\n" . $messageText;
+
         \Log::info('Dispatching intervene job', [
             'session_id' => $session->id,
             'target' => $targetId,
             'target_ai_enum' => $targetAi->value,
             'query' => $query,
-            'queue_connection' => config('queue.default'),
         ]);
 
         \App\Presentation\Jobs\ProcessDebateTurn::dispatch(
@@ -156,8 +152,6 @@ class DiscordInteractionController extends Controller
             null, // replyToMessageId
             true  // isHumanIntervention
         );
-
-        \Log::info('Intervene job dispatched successfully');
 
         return response()->json([
             'type' => 4,
