@@ -8,7 +8,7 @@
 > [!NOTE]
 > このプロジェクトのソースコードおよびドキュメントは、**JetBrains AI (Junie)** によって作成されました。
 
-> [!WARNING]
+> [!IMPORTANT]
 > **Contributing / 注意事項**
 > This repository is a personal project and is published for showcase purposes only.
 > **Pull Requests and questions (via Issues) are not accepted.**
