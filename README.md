@@ -8,6 +8,12 @@
 > [!NOTE]
 > このプロジェクトのソースコードおよびドキュメントは、**JetBrains AI (Junie)** によって作成されました。
 
+## 🛑 Contributing
+This repository is a personal project and is published for showcase purposes only. 
+**Pull Requests are not accepted.** If you find any issues or have suggestions, please feel free to open an Issue (または "Issues are also disabled").
+
+本リポジトリは閲覧専用（Read-Only）として公開しています。**プルリクエストは一切受け付けておりません**ので、あらかじめご了承ください。
+
 ## 1. システム構成
 - **Backend:** Laravel 13
 - **AI Integration:** Dify API
