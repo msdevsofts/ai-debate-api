@@ -53,7 +53,7 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         config(['services.discord.bot_ids' => ['111' => 'phi']]);
 
-        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。 <@111>', '123456', TargetAi::GEMMA, null)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('AIの未来は明るいです。 <@111>', '123456', TargetAi::GEMINI, null)->once();
         $repository->shouldReceive('save')->once();
 
         $formatter = Mockery::mock(DiscordMessageFormatter::class);

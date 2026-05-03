@@ -25,10 +25,11 @@ class StartDebateUseCase
     ): string
     {
         // 1. 先にセッションを作成してIDを取得する (チャンネルIDなどは後で更新)
+        // 初回の発言者はファシリテーターであるGeminiに固定する
         $session = new DebateSession(
             id: null,
             topic: $topic,
-            initialAi: $initialAi ? \App\Domain\Enums\TargetAi::tryFrom($initialAi) : null,
+            initialAi: \App\Domain\Enums\TargetAi::GEMINI,
             discordChannelId: null,
             discordWebhookUrl: null, // Webhookは廃止するが、互換性のためにnullのまま保持
             currentTurn: 0,

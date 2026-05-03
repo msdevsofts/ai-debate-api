@@ -26,9 +26,9 @@ class DebateSession
             return TargetAi::GEMINI_CONCLUSION;
         }
 
-        // 指定された初期AIがある場合、最初のターンで使用する
-        if ($this->currentTurn === 0 && $this->initialAi !== null) {
-            return $this->initialAi;
+        // 最初のターン（currentTurn=0）は必ずGeminiが議題を提示する
+        if ($this->currentTurn === 0) {
+            return TargetAi::GEMINI;
         }
 
         // 司会(Gemini)を除いた参加者のリスト

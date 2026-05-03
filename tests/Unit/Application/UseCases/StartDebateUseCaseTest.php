@@ -10,6 +10,7 @@ use App\Domain\Repositories\DebateSessionRepositoryInterface;
 use App\Infrastructure\Adapters\DiscordApiAdapter;
 use Illuminate\Support\Facades\Queue;
 use App\Presentation\Jobs\ProcessDebateTurn;
+use App\Domain\Enums\TargetAi;
 use Tests\TestCase;
 use Mockery;
 
@@ -45,7 +46,7 @@ class StartDebateUseCaseTest extends TestCase
         Queue::assertPushed(ProcessDebateTurn::class);
     }
 
-    public function test_execute_starts_debate_with_specified_initial_ai(): void
+    public function test_execute_always_starts_debate_with_gemini(): void
     {
         $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
         $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
@@ -53,18 +54,17 @@ class StartDebateUseCaseTest extends TestCase
 
         $topic = 'テストの議題';
         $channelId = 'channel_123';
-        $webhookUrl = 'https://discord.com/api/webhooks/123/abc';
-        $initialAi = 'gemini';
+        $initialAi = 'llama'; // 指定しても無視されてGeminiになるべき
 
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
         $discordAdapter->shouldReceive('postMessage')->once();
 
-        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) use ($initialAi) {
+        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) {
             if ($session->id === null) {
                 $session->id = 1;
-            } else {
-                $this->assertEquals($initialAi, $session->initialAi->value);
             }
+            // initialAiがGeminiであることを確認
+            $this->assertEquals(TargetAi::GEMINI, $session->initialAi);
             return $session;
         });
 
