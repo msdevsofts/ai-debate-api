@@ -318,9 +318,8 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('postMessage')->once();
         $repository->shouldReceive('save')->once();
 
-        // メンションがない場合のフォールバックで Phi が選ばれるようにする
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
-        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
+        $formatter->shouldReceive('extractNextAi')->with(Mockery::any(), Mockery::any(), Mockery::any())->andReturn(TargetAi::PHI);
         $formatter->shouldReceive('format')->andReturn($answerWithoutMention . ' <@222>');
 
         $useCase = new ProcessDebateTurnUseCase($repository, $difyAdapter, $discordAdapter, $formatter);

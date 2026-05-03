@@ -43,7 +43,7 @@ class DiscordMessageFormatter
     /**
      * メッセージ内容から次に発言すべきAIを特定する
      */
-    public function extractNextAi(string $content, TargetAi $currentAi): ?TargetAi
+    public function extractNextAi(string $content, TargetAi $currentAi, int $currentTurn = 0): ?TargetAi
     {
         // 1. <@ID> または <@!ID> 形式を正規表現ですべて抽出
         if (preg_match_all('/<@!?(\d+)>/', $content, $matches)) {
@@ -59,6 +59,11 @@ class DiscordMessageFormatter
                     'bot_id' => $targetId,
                     'ai' => $targetAi->value
                 ]);
+                // 司会(Gemini)の最初のターンでの自己メンションはフォールバックさせる
+                // それ以外はnull（終了）を返す
+                if ($currentAi === TargetAi::GEMINI && $currentTurn <= 1) {
+                    return $this->getRandomFallbackAi($currentAi);
+                }
                 return null;
             }
 
@@ -71,11 +76,22 @@ class DiscordMessageFormatter
         \Illuminate\Support\Facades\Log::info("有効なメンションが見つからなかったため、フォールバック処理に移行します。");
 
         // 現在の発言者が「Gemini（司会）」である場合：意図的な議論終了
+        // ただし、最初のターン（currentTurn <= 1）は議論開始の挨拶なのでフォールバックさせる
         if ($currentAi === TargetAi::GEMINI || $currentAi === TargetAi::GEMINI_CONCLUSION) {
+            if ($currentTurn <= 1) {
+                return $this->getRandomFallbackAi($currentAi);
+            }
             return null;
         }
 
-        // フォールバック：自分とGemini以外のAIからランダムに選択
+        return $this->getRandomFallbackAi($currentAi);
+    }
+
+    /**
+     * 自分とGemini以外のAIからランダムに選択
+     */
+    private function getRandomFallbackAi(TargetAi $currentAi): ?TargetAi
+    {
         $botIds = config('services.discord.bot_ids', []);
         $availableAis = [];
 

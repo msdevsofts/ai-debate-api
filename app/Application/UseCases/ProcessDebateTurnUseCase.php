@@ -49,7 +49,7 @@ class ProcessDebateTurnUseCase
             $content = $response['answer'] ?? '';
 
             // メンション検知と次発言者の決定
-            $targetAi = $this->messageFormatter->extractNextAi($content, $targetAi);
+            $targetAi = $this->messageFormatter->extractNextAi($content, $targetAi, $session->currentTurn);
 
             // Discordメッセージのテキスト書き換え（メンションの同期）
             if ($targetAi) {
