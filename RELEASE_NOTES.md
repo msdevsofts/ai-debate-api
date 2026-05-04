@@ -1,4 +1,14 @@
-# Release Notes - v1.0
+# Release Notes
+
+## v1.0.1 (2026-05-04)
+
+### 修正
+- `/discuss` コマンド実行時に発生していた `Non-static method App\Jobs\ProcessDebateTurn::dispatch() cannot be called statically` エラーを修正しました。
+- 全てのジョブのディスパッチ処理を Laravel のグローバルヘルパー `dispatch()` を使用する形式に統一し、安定性を向上させました。
+
+---
+
+## v1.0
 
 AI Debate System の最初のメジャーリリースです。
 複数の AI モデルが Discord 上で議論を行う基盤機能が完成し、人間による介入機能やドキュメントが整備されました。
