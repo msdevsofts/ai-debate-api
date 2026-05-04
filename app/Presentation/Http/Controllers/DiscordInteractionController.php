@@ -54,13 +54,13 @@ class DiscordInteractionController extends Controller
         }
 
         // 非同期Jobをディスパッチして即座にDEFERREDを返す
-        StartDebateJob::dispatch(
+        dispatch(new StartDebateJob(
             (string)$topic,
             $initialAi ? (string)$initialAi : null,
             $bot,
             $applicationId ? (string)$applicationId : null,
             $token ? (string)$token : null
-        );
+        ));
 
         return response()->json([
             'type' => 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
@@ -145,13 +145,13 @@ class DiscordInteractionController extends Controller
             'query' => $query,
         ]);
 
-        \App\Presentation\Jobs\ProcessDebateTurn::dispatch(
+        dispatch(new \App\Presentation\Jobs\ProcessDebateTurn(
             $session->id,
             $targetAi,
             $query,
             null, // replyToMessageId
             true  // isHumanIntervention
-        );
+        ));
 
         return response()->json([
             'type' => 4,

@@ -120,7 +120,7 @@ class ProcessDebateTurnUseCase
 
             if ($targetAi && !$session->isCompleted()) {
                 // 決定されたAIをターゲットにして10秒後に実行
-                ProcessDebateTurn::dispatch($session->id, $targetAi)->delay(now()->addSeconds(10));
+                dispatch(new ProcessDebateTurn($session->id, $targetAi))->delay(now()->addSeconds(10));
             }
         } catch (\Exception $e) {
             $session->fail();

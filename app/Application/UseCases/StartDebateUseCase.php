@@ -66,7 +66,7 @@ class StartDebateUseCase
         }
 
         // 4. 非同期Jobディスパッチ
-        ProcessDebateTurn::dispatch($session->id);
+        dispatch(new ProcessDebateTurn($session->id));
 
         return $channelId;
     }
