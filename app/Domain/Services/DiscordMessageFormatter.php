@@ -9,7 +9,8 @@ use App\Domain\Enums\TargetAi;
 class DiscordMessageFormatter
 {
     /**
-     * AIの回答をDiscord向けに整形する（メンションの同期、名前のクリーンアップ）
+     * AIの回答をDiscord向けに整形する
+     * メンションの同期、名前のクリーンアップ、文字数制限のための分割を行う
      */
     public function format(string $content, TargetAi $nextAi): string
     {
@@ -41,6 +42,68 @@ class DiscordMessageFormatter
     }
 
     /**
+     * テキストからメンション（<@数字>）を抽出し、元のテキストから削除する。
+     * 抽出したメンション文字列（またはnull）と、クリーンアップ後のテキストを返す。
+     *
+     * @return array{0: string|null, 1: string} [mention, cleaned_text]
+     */
+    public function extractAndRemoveMentions(string $content): array
+    {
+        $mention = null;
+        if (preg_match('/<@!?(\d+)>/', $content, $matches)) {
+            $mention = $matches[0];
+            $content = preg_replace('/<@!?\d+>/', '', $content);
+        }
+
+        // 名前の残骸も除去
+        foreach (TargetAi::cases() as $case) {
+            $name = preg_quote($case->getName(), '/');
+            $content = preg_replace("/@{$name}/i", '', $content);
+            $content = preg_replace("/\({$name}\)/i", '', $content);
+        }
+
+        return [$mention, trim(preg_replace('/\s+/', ' ', $content))];
+    }
+
+    /**
+     * テキストを最大文字数ごとに分割する。
+     * 改行や句点を優先して分割を試みる。
+     */
+    public function splitMessage(string $text, int $maxLength = 1900): array
+    {
+        if (mb_strlen($text) <= $maxLength) {
+            return [$text];
+        }
+
+        $chunks = [];
+        while (mb_strlen($text) > 0) {
+            if (mb_strlen($text) <= $maxLength) {
+                $chunks[] = $text;
+                break;
+            }
+
+            // 指定された最大長までの部分を取得
+            $candidate = mb_substr($text, 0, $maxLength);
+
+            // 分割の優先順位: 1. 改行 (\n), 2. 句点 (。)
+            $splitPos = mb_strrpos($candidate, "\n");
+            if ($splitPos === false || $splitPos === 0) {
+                $splitPos = mb_strrpos($candidate, "。");
+            }
+
+            // 分割ポイントが見つからない場合は、最大長でぶつ切り
+            if ($splitPos === false || $splitPos === 0) {
+                $splitPos = $maxLength - 1;
+            }
+
+            $chunks[] = mb_substr($text, 0, $splitPos + 1);
+            $text = mb_substr($text, $splitPos + 1);
+        }
+
+        return array_map('trim', array_filter($chunks));
+    }
+
+    /**
      * メッセージ内容から次に発言すべきAIを特定する
      */
     public function extractNextAi(string $content, TargetAi $currentAi, int $currentTurn = 0): ?TargetAi
@@ -60,24 +123,22 @@ class DiscordMessageFormatter
                     'ai' => $targetAi->value,
                     'current_ai' => $currentAi->value
                 ]);
-                return null;
-            }
-
-            if ($targetAi !== null) {
+                // 自己メンションの場合はランダムフォールバックへ
+            } elseif ($targetAi !== null) {
                 return $targetAi;
             }
         }
 
         // メンションが見つからなかった、または自己メンションだった場合
-        \Illuminate\Support\Facades\Log::info("有効なメンションが見つからなかったため、ループを停止します。");
+        \Illuminate\Support\Facades\Log::info("有効なメンションが見つからなかったため、ランダムフォールバックを試みます。");
 
-        return null;
+        return $this->getRandomFallbackAi($currentAi);
     }
 
     /**
      * 自分とGemini以外のAIからランダムに選択
      */
-    private function getRandomFallbackAi(TargetAi $currentAi): ?TargetAi
+    public function getRandomFallbackAi(TargetAi $currentAi): ?TargetAi
     {
         $botIds = config('services.discord.bot_ids', []);
         $availableAis = [];

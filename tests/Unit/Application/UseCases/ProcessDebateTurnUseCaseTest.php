@@ -56,7 +56,8 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
-        $formatter->shouldReceive('format')->andReturn('AIの未来は明るいです。 <@111>');
+        $formatter->shouldReceive('extractAndRemoveMentions')->andReturn(['<@111>', 'AIの未来は明るいです。']);
+        $formatter->shouldReceive('splitMessage')->andReturn(['AIの未来は明るいです。']);
 
         $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
@@ -105,6 +106,8 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(null);
+        $formatter->shouldReceive('extractAndRemoveMentions')->andReturn([null, '結論として...']);
+        $formatter->shouldReceive('splitMessage')->andReturn(['結論として...']);
 
         $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
@@ -150,7 +153,8 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
-        $formatter->shouldReceive('format')->andReturn($answerWithMention);
+        $formatter->shouldReceive('extractAndRemoveMentions')->andReturn(['<@999888777>', '次は さん、お願いします。']);
+        $formatter->shouldReceive('splitMessage')->andReturn(['次は さん、お願いします。']);
 
         $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
@@ -196,6 +200,8 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(null);
+        $formatter->shouldReceive('extractAndRemoveMentions')->andReturn([null, $answerWithoutMention]);
+        $formatter->shouldReceive('splitMessage')->andReturn([$answerWithoutMention]);
 
         $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
@@ -240,7 +246,9 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         $repository->shouldReceive('save')->once();
 
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
-        $formatter->shouldReceive('extractNextAi')->andReturn(null); // 自己メンション時は null が返る
+        $formatter->shouldReceive('extractNextAi')->andReturn(null);
+        $formatter->shouldReceive('extractAndRemoveMentions')->andReturn([null, $answerWithSelfMention]);
+        $formatter->shouldReceive('splitMessage')->andReturn([$answerWithSelfMention]);
 
         $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
@@ -293,6 +301,8 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         $formatter = Mockery::mock(DiscordMessageFormatter::class);
         $formatter->shouldReceive('extractNextAi')->andReturn(null);
+        $formatter->shouldReceive('extractAndRemoveMentions')->andReturn([null, 'Acknowledged.']);
+        $formatter->shouldReceive('splitMessage')->andReturn(['Acknowledged.']);
 
         $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
 
@@ -371,6 +381,49 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         );
 
         $this->assertFalse($session->isCompleted(), 'Session should not be completed after intervention');
+    }
+
+    public function test_execute_splits_long_message_into_multiple_posts(): void
+    {
+        $repository = Mockery::mock(DebateSessionRepositoryInterface::class);
+        $difyAdapter = Mockery::mock(DifyApiAdapter::class);
+        $discordAdapter = Mockery::mock(DiscordApiAdapter::class);
+        Queue::fake();
+
+        $sessionId = 1;
+        $session = $this->createTestSession([
+            'id' => $sessionId,
+            'topic' => 'Long Topic',
+            'discordChannelId' => '123456',
+            'currentTurn' => 0,
+            'maxTurns' => 10,
+        ]);
+
+        $repository->shouldReceive('findById')->with($sessionId)->andReturn($session);
+
+        $longAnswer = "Part 1. Part 2. <@101>";
+        $difyAdapter->shouldReceive('chat')->andReturn([
+            'answer' => $longAnswer,
+            'conversation_id' => 'conv_123'
+        ]);
+
+        // 2回に分けて送信されることを期待
+        $discordAdapter->shouldReceive('postMessage')->with('Part 1.', '123456', TargetAi::GEMINI, null)->once();
+        $discordAdapter->shouldReceive('postMessage')->with('Part 2. <@101>', '123456', TargetAi::GEMINI, null)->once();
+
+        $repository->shouldReceive('save')->once();
+
+        $formatter = Mockery::mock(DiscordMessageFormatter::class);
+        $formatter->shouldReceive('extractNextAi')->andReturn(TargetAi::PHI);
+        $formatter->shouldReceive('extractAndRemoveMentions')->andReturn(['<@101>', 'Part 1. Part 2.']);
+        // 意図的に2つに分割
+        $formatter->shouldReceive('splitMessage')->andReturn(['Part 1.', 'Part 2.']);
+
+        $useCase = $this->setupUseCase($repository, $difyAdapter, $discordAdapter, $formatter);
+
+        $useCase->execute($sessionId);
+
+        $this->assertTrue(true);
     }
     private function setupUseCase(
         Mockery\MockInterface $repository,

@@ -89,17 +89,43 @@ class ProcessDebateTurnUseCase
 
             $content = $response['answer'] ?? '';
 
-            // メンション検知と次発言者の決定
-            $targetAi = $this->messageFormatter->extractNextAi($content, $targetAi, $session->currentTurn);
+            // 1. <think>タグの除去
+            $content = trim(preg_replace('/<think>.*?<\/think>\s*/s', '', $content));
 
-            // Discordメッセージのテキスト書き換え（メンションの同期）
-            if ($targetAi) {
-                $content = $this->messageFormatter->format($content, $targetAi);
+            // 2. 次発言者の決定
+            $nextAi = $this->messageFormatter->extractNextAi($content, $targetAi, $session->currentTurn);
+
+            // 3. メンションの退避とテキストのクリーンアップ
+            [$mention, $cleanedContent] = $this->messageFormatter->extractAndRemoveMentions($content);
+
+            // 4. テキストの分割
+            $chunks = $this->messageFormatter->splitMessage($cleanedContent, 1900);
+
+            // 5. 順次送信
+            $lastIndex = count($chunks) - 1;
+            foreach ($chunks as $index => $chunk) {
+                $messagePayload = $chunk;
+
+                // 最後のチャンクにメンションを付与
+                if ($index === $lastIndex) {
+                    // 退避しておいたメンションがあればそれを使用、なければ決定された次発言者のメンションを生成
+                    $finalMention = $mention;
+                    if (!$finalMention && $nextAi && $nextAi !== TargetAi::GEMINI_CONCLUSION) {
+                        $botId = $nextAi->getBotId();
+                        if ($botId) {
+                            $finalMention = "<@{$botId}>";
+                        }
+                    }
+
+                    if ($finalMention) {
+                        $messagePayload .= " {$finalMention}";
+                    }
+                }
+
+                $this->discordAdapter->postMessage($messagePayload, $session->discordChannelId, $originalTargetAi, $replyToMessageId);
             }
 
-            // Discordメッセージ投稿
-            // 送信主は $originalTargetAi、本文 $content 内のメンションは $targetAi (次の発言者) に同期済み
-            $this->discordAdapter->postMessage($content, $session->discordChannelId, $originalTargetAi, $replyToMessageId);
+            $targetAi = $nextAi;
 
             // ターンをインクリメント
             $session->incrementTurn();

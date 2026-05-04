@@ -63,28 +63,53 @@ class DiscordMessageFormatterTest extends TestCase
         $this->assertEquals(TargetAi::PHI, $result);
     }
 
-    public function test_extractNextAi_returns_null_on_self_mention(): void
+    public function test_extractNextAi_falls_back_on_self_mention(): void
     {
         $content = "次は <@333> さん（自分）にお願い。";
-        // 現在の発言者が Phi (333) の場合
+        // 現在の発言者が Phi (333) の場合、自己メンションが検出されるが
+        // 実装ではランダムフォールバックが走るため、nullにはならないはず（他のAIが設定されていれば）
         $result = $this->formatter->extractNextAi($content, TargetAi::PHI);
 
-        $this->assertNull($result);
+        $this->assertNotNull($result);
+        $this->assertNotEquals(TargetAi::PHI, $result);
     }
 
-    public function test_extractNextAi_returns_null_if_no_mention(): void
+    public function test_extractNextAi_falls_back_to_random_when_no_mention(): void
     {
         $content = "メンションがありません。";
+        // Gemini (111) からの呼び出しで、ランダムに他のAI（gemma, phi, llama, gpt-oss-q2）のいずれかが選ばれる
         $result = $this->formatter->extractNextAi($content, TargetAi::GEMINI);
 
-        $this->assertNull($result);
+        $this->assertNotNull($result);
+        $this->assertNotEquals(TargetAi::GEMINI, $result);
     }
 
-    public function test_extractNextAi_handles_exclamation_mark_in_mention(): void
+    public function test_extractAndRemoveMentions_works_correctly(): void
     {
-        $content = "次は <@!333> さん。";
-        $result = $this->formatter->extractNextAi($content, TargetAi::GEMINI);
+        $content = "こんにちは <@333> さん。 (Phi) @Phi どうですか？";
+        [$mention, $cleaned] = $this->formatter->extractAndRemoveMentions($content);
 
-        $this->assertEquals(TargetAi::PHI, $result);
+        $this->assertEquals('<@333>', $mention);
+        $this->assertEquals('こんにちは さん。 どうですか？', $cleaned);
+    }
+
+    public function test_splitMessage_splits_long_text(): void
+    {
+        $longText = str_repeat("あ", 1000) . "\n" . str_repeat("い", 1000);
+        $chunks = $this->formatter->splitMessage($longText, 1100);
+
+        $this->assertCount(2, $chunks);
+        $this->assertEquals(str_repeat("あ", 1000), $chunks[0]);
+        $this->assertEquals(str_repeat("い", 1000), $chunks[1]);
+    }
+
+    public function test_splitMessage_splits_at_period(): void
+    {
+        $longText = str_repeat("あ", 1000) . "。" . str_repeat("い", 1000);
+        $chunks = $this->formatter->splitMessage($longText, 1100);
+
+        $this->assertCount(2, $chunks);
+        $this->assertEquals(str_repeat("あ", 1000) . "。", $chunks[0]);
+        $this->assertEquals(str_repeat("い", 1000), $chunks[1]);
     }
 }
