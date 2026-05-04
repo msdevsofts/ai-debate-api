@@ -93,13 +93,22 @@ class DiscordMessageFormatterTest extends TestCase
         $this->assertEquals('こんにちは さん。 どうですか？', $cleaned);
     }
 
+    public function test_extractAndRemoveMentions_preserves_newlines(): void
+    {
+        $content = "第一行\n第二行 <@333>\n第三行";
+        [$mention, $cleaned] = $this->formatter->extractAndRemoveMentions($content);
+
+        $this->assertEquals('<@333>', $mention);
+        $this->assertEquals("第一行\n第二行 \n第三行", $cleaned);
+    }
+
     public function test_splitMessage_splits_long_text(): void
     {
         $longText = str_repeat("あ", 1000) . "\n" . str_repeat("い", 1000);
         $chunks = $this->formatter->splitMessage($longText, 1100);
 
         $this->assertCount(2, $chunks);
-        $this->assertEquals(str_repeat("あ", 1000), $chunks[0]);
+        $this->assertEquals(str_repeat("あ", 1000) . "\n", $chunks[0]);
         $this->assertEquals(str_repeat("い", 1000), $chunks[1]);
     }
 

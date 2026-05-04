@@ -37,8 +37,8 @@ class DiscordMessageFormatter
             $content = preg_replace("/\({$name}\)/i", '', $content);
         }
 
-        // 余分な空白を整理
-        return trim(preg_replace('/\s+/', ' ', $content));
+        // 余分な空白を整理（改行は維持）
+        return trim(preg_replace('/[ \t]+/', ' ', $content));
     }
 
     /**
@@ -62,7 +62,7 @@ class DiscordMessageFormatter
             $content = preg_replace("/\({$name}\)/i", '', $content);
         }
 
-        return [$mention, trim(preg_replace('/\s+/', ' ', $content))];
+        return [$mention, trim(preg_replace('/[ \t]+/', ' ', $content))];
     }
 
     /**
@@ -100,7 +100,7 @@ class DiscordMessageFormatter
             $text = mb_substr($text, $splitPos + 1);
         }
 
-        return array_map('trim', array_filter($chunks));
+        return array_filter($chunks);
     }
 
     /**
