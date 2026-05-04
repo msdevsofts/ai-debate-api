@@ -19,7 +19,7 @@ class StartDebateJob implements ShouldQueue
     /**
      * スレッド作成等の処理も念のため長めに設定
      */
-    public int $timeout = 300;
+    public int $timeout;
 
     public function __construct(
         public readonly string $topic,
@@ -27,7 +27,9 @@ class StartDebateJob implements ShouldQueue
         public readonly ?string $triggerBot = null,
         public readonly ?string $applicationId = null,
         public readonly ?string $token = null
-    ) {}
+    ) {
+        $this->timeout = (int) env('START_DEBATE_JOB_TIMEOUT', 300);
+    }
 
     public function handle(StartDebateUseCase $useCase): void
     {

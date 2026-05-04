@@ -6,6 +6,12 @@
 - `/discuss` コマンド実行時に発生していた `Non-static method App\Jobs\ProcessDebateTurn::dispatch() cannot be called statically` エラーを修正しました。
 - 全てのジョブのディスパッチ処理を Laravel のグローバルヘルパー `dispatch()` を使用する形式に統一し、安定性を向上させました。
 
+### 改善
+- タイムアウトおよびリトライ間隔の設定をハードコードから `.env` で管理できるように変更しました。
+  - Dify API のタイムアウト (`DIFY_API_TIMEOUT`, `DIFY_API_CONNECT_TIMEOUT`)
+  - キューのリトライ間隔 (`QUEUE_RETRY_AFTER`)
+  - 開始ジョブのタイムアウト (`START_DEBATE_JOB_TIMEOUT`)
+
 ---
 
 ## v1.0

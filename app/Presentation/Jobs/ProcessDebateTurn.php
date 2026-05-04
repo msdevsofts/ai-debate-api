@@ -20,7 +20,7 @@ class ProcessDebateTurn implements ShouldQueue
     /**
      * タイムアウト時間を設定 (Dify APIの応答待ち時間に合わせる)
      */
-    public int $timeout = 120;
+    public int $timeout;
 
     /**
      * リトライ回数を制限
@@ -34,6 +34,7 @@ class ProcessDebateTurn implements ShouldQueue
         public readonly ?string $replyToMessageId = null,
         public readonly bool $isHumanIntervention = false
     ) {
+        $this->timeout = (int) config('services.dify.timeout', 120) + 20;
     }
 
     public function handle(ProcessDebateTurnUseCase $useCase): void

@@ -12,11 +12,15 @@ class DifyApiAdapter
 {
     private string $baseUrl;
     private string $apiKey;
+    private int $timeout;
+    private int $connectTimeout;
 
     public function __construct()
     {
         $this->baseUrl = config('services.dify.base_url');
         $this->apiKey = config('services.dify.api_key');
+        $this->timeout = (int) config('services.dify.timeout', 100);
+        $this->connectTimeout = (int) config('services.dify.connect_timeout', 10);
     }
 
     public function chat(string $query, ?string $conversationId, TargetAi $targetAi, string $topic, bool $isHumanIntervention = false): array
@@ -36,8 +40,8 @@ class DifyApiAdapter
         Log::info('Dify Request Full Payload: ', $payload);
 
         $response = Http::withToken($this->apiKey)
-            ->timeout(100) // 以前は 1000秒 だったが現実的な値へ
-            ->connectTimeout(10)
+            ->timeout($this->timeout)
+            ->connectTimeout($this->connectTimeout)
             ->post("{$this->baseUrl}/chat-messages", $payload);
 
         if ($response->failed()) {

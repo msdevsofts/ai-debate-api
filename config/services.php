@@ -38,6 +38,8 @@ return [
     'dify' => [
         'base_url' => env('DIFY_API_BASE_URL', 'http://10.10.1.10/v1'),
         'api_key' => env('DIFY_API_KEY'),
+        'timeout' => env('DIFY_API_TIMEOUT', 100),
+        'connect_timeout' => env('DIFY_API_CONNECT_TIMEOUT', 10),
     ],
 
     'discord' => [
