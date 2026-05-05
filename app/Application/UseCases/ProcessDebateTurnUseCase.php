@@ -89,11 +89,25 @@ class ProcessDebateTurnUseCase
 
             $content = $response['answer'] ?? '';
 
-            // 1. <think>タグの除去
-            $content = trim(preg_replace('/<think>.*?<\/think>\s*/s', '', $content));
+            // 1. 思考プロセス（<think> や (think)）の除去
+            $content = trim(preg_replace('/(?:<think>|\(think\)).*?<\/think>\s*/is', '', $content));
 
-            // 2. 次発言者の決定
+            // 2. 空文字・メンション漏れ時の確定フォールバック（司会へのパス）
+            // 次発言者の決定を試みる
             $nextAi = $this->messageFormatter->extractNextAi($content, $targetAi, $session->currentTurn);
+
+            if (empty($content)) {
+                $content = '（深く考え込んでおり、言葉が出てこないようだ…）';
+            }
+
+            if ($nextAi === null && $targetAi !== TargetAi::GEMINI_CONCLUSION) {
+                $facilitatorId = '1499779594298064936';
+                $content .= " <@{$facilitatorId}>";
+                $nextAi = TargetAi::GEMINI;
+                \Illuminate\Support\Facades\Log::info('ProcessDebateTurnUseCase: メンションが見つからないか空文字のため、司会にパスを回します。', [
+                    'session_id' => $session->id
+                ]);
+            }
 
             // 3. メンションの退避とテキストのクリーンアップ
             [$mention, $cleanedContent] = $this->messageFormatter->extractAndRemoveMentions($content);
