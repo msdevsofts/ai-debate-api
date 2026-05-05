@@ -17,7 +17,8 @@ class DebateSession
         public int $currentTurn,
         public int $maxTurns,
         public ?string $difyConversationId,
-        public string $status
+        public string $status,
+        public ?string $currentTurnId = null
     ) {}
 
     public function getNextAi(): TargetAi
@@ -80,5 +81,10 @@ class DebateSession
     public function fail(): void
     {
         $this->status = 'failed';
+    }
+
+    public function updateTurnId(string $turnId): void
+    {
+        $this->currentTurnId = $turnId;
     }
 }

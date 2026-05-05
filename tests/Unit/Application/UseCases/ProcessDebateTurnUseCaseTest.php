@@ -67,7 +67,9 @@ class ProcessDebateTurnUseCaseTest extends TestCase
         // Assert
         $this->assertEquals('conv_123', $session->difyConversationId);
         $this->assertEquals(1, $session->currentTurn);
-        Queue::assertPushed(ProcessDebateTurn::class);
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($session) {
+            return $job->turnId === $session->currentTurnId;
+        });
     }
 
     public function test_execute_completes_when_gemini_finishes(): void
@@ -163,8 +165,10 @@ class ProcessDebateTurnUseCaseTest extends TestCase
 
         // Assert
         // メンションされたAI (Phi) をターゲットとしてジョブがディスパッチされていることを確認
-        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
-            return $job->debateSessionId === $sessionId && $job->targetAi === TargetAi::PHI;
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $session) {
+            return $job->debateSessionId === $sessionId &&
+                   $job->targetAi === TargetAi::PHI &&
+                   $job->turnId === $session->currentTurnId;
         });
     }
 

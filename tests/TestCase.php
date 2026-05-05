@@ -31,7 +31,8 @@ abstract class TestCase extends BaseTestCase
             currentTurn: $attributes['currentTurn'] ?? 0,
             maxTurns: $attributes['maxTurns'] ?? 10,
             difyConversationId: $attributes['difyConversationId'] ?? null,
-            status: $attributes['status'] ?? 'running'
+            status: $attributes['status'] ?? 'running',
+            currentTurnId: $attributes['currentTurnId'] ?? null
         );
     }
 }

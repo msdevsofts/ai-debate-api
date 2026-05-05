@@ -44,6 +44,7 @@ class DebateSessionRepository implements DebateSessionRepositoryInterface
                 'max_turns' => $session->maxTurns,
                 'dify_conversation_id' => $session->difyConversationId,
                 'status' => $session->status,
+                'current_turn_id' => $session->currentTurnId,
             ]
         );
 
@@ -61,7 +62,8 @@ class DebateSessionRepository implements DebateSessionRepositoryInterface
             currentTurn: (int)$model->current_turn,
             maxTurns: (int)$model->max_turns,
             difyConversationId: (string)$model->dify_conversation_id,
-            status: (string)$model->status
+            status: (string)$model->status,
+            currentTurnId: (string)$model->current_turn_id
         );
     }
 }

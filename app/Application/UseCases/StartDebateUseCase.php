@@ -66,7 +66,11 @@ class StartDebateUseCase
         }
 
         // 4. 非同期Jobディスパッチ
-        dispatch(new ProcessDebateTurn($session->id));
+        $turnId = \Illuminate\Support\Str::uuid()->toString();
+        $session->updateTurnId($turnId);
+        $this->repository->save($session);
+
+        dispatch(new ProcessDebateTurn($session->id, null, null, null, false, $turnId));
 
         return $channelId;
     }

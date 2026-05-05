@@ -38,6 +38,7 @@ class DiscordInterveneInteractionTest extends TestCase
         $repository->shouldReceive('findByDiscordChannelId')
             ->with($channelId)
             ->andReturn($session);
+        $repository->shouldReceive('save')->once();
 
         $this->app->instance(DebateSessionRepositoryInterface::class, $repository);
 
@@ -67,12 +68,13 @@ class DiscordInterveneInteractionTest extends TestCase
                 ]
             ]);
 
-        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $message) {
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $message, $session) {
             $expectedMessage = "【システム管理者（人間）からの最優先の介入指示】\n" . $message;
             return $job->debateSessionId === $sessionId &&
                    $job->targetAi === TargetAi::GEMMA &&
                    $job->query === $expectedMessage &&
-                   $job->isHumanIntervention === true;
+                   $job->isHumanIntervention === true &&
+                   $job->turnId === $session->currentTurnId;
         });
     }
 

@@ -53,6 +53,7 @@ class DiscordMessageControllerTest extends TestCase
         $repository->shouldReceive('findByDiscordChannelId')
             ->with($channelId)
             ->andReturn($session);
+        $repository->shouldReceive('save')->once();
 
         $content = '人間が割り込みます。どう思いますか？';
 
@@ -68,10 +69,11 @@ class DiscordMessageControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['status' => 'ok']);
 
-        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $content) {
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $content, $session) {
             return $job->debateSessionId === $sessionId
                 && $job->targetAi === \App\Domain\Enums\TargetAi::GEMINI
-                && $job->query === $content;
+                && $job->query === $content
+                && $job->turnId === $session->currentTurnId;
         });
     }
 
@@ -95,6 +97,7 @@ class DiscordMessageControllerTest extends TestCase
         $repository->shouldReceive('findByDiscordChannelId')
             ->with($channelId)
             ->andReturn($session);
+        $repository->shouldReceive('save')->once();
 
         // IDから判定するパスを試す
         $phiId = '1499775795067879436'; // Phi の ID
@@ -112,9 +115,10 @@ class DiscordMessageControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['status' => 'ok']);
 
-        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId) {
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) use ($sessionId, $session) {
             return $job->debateSessionId === $sessionId
-                && $job->targetAi === \App\Domain\Enums\TargetAi::PHI;
+                && $job->targetAi === \App\Domain\Enums\TargetAi::PHI
+                && $job->turnId === $session->currentTurnId;
         });
     }
 }

@@ -145,12 +145,17 @@ class DiscordInteractionController extends Controller
             'query' => $query,
         ]);
 
+        $turnId = \Illuminate\Support\Str::uuid()->toString();
+        $session->updateTurnId($turnId);
+        $repository->save($session);
+
         dispatch(new \App\Presentation\Jobs\ProcessDebateTurn(
             $session->id,
             $targetAi,
             $query,
             null, // replyToMessageId
-            true  // isHumanIntervention
+            true,  // isHumanIntervention
+            $turnId
         ));
 
         return response()->json([

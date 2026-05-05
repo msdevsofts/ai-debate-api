@@ -43,7 +43,9 @@ class StartDebateUseCaseTest extends TestCase
 
         // Assert
         $this->assertEquals($channelId, $result);
-        Queue::assertPushed(ProcessDebateTurn::class);
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) {
+            return $job->turnId !== null;
+        });
     }
 
     public function test_execute_always_starts_debate_with_gemini(): void
@@ -74,6 +76,8 @@ class StartDebateUseCaseTest extends TestCase
         $useCase->execute($topic, $initialAi);
 
         // Assert
-        Queue::assertPushed(ProcessDebateTurn::class);
+        Queue::assertPushed(ProcessDebateTurn::class, function ($job) {
+            return $job->turnId !== null;
+        });
     }
 }

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $max_turns
  * @property string|null $dify_conversation_id
  * @property string $status
+ * @property string|null $current_turn_id
  */
 class DebateSessionModel extends Model
 {
@@ -29,5 +30,6 @@ class DebateSessionModel extends Model
         'max_turns',
         'dify_conversation_id',
         'status',
+        'current_turn_id',
     ];
 }

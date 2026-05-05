@@ -146,7 +146,11 @@ class ProcessDebateTurnUseCase
 
             if ($targetAi && !$session->isCompleted()) {
                 // 決定されたAIをターゲットにして10秒後に実行
-                dispatch(new ProcessDebateTurn($session->id, $targetAi))->delay(now()->addSeconds(10));
+                $turnId = \Illuminate\Support\Str::uuid()->toString();
+                $session->updateTurnId($turnId);
+                $this->repository->save($session);
+
+                dispatch(new ProcessDebateTurn($session->id, $targetAi, null, null, false, $turnId))->delay(now()->addSeconds(10));
             }
         } catch (\Exception $e) {
             $session->fail();

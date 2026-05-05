@@ -63,12 +63,17 @@ class DiscordMessageController extends Controller
         }
 
         // 5. Jobをディスパッチ
+        $turnId = \Illuminate\Support\Str::uuid()->toString();
+        $session->updateTurnId($turnId);
+        $this->repository->save($session);
+
         dispatch(new ProcessDebateTurn(
             $session->id,
             $targetAi,
             $query,
             $messageId, // 返信用に元のメッセージIDを渡す
-            $isHumanIntervention
+            $isHumanIntervention,
+            $turnId
         ));
 
         return response()->json(['status' => 'ok']);

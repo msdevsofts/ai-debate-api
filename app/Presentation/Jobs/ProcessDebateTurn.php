@@ -32,7 +32,8 @@ class ProcessDebateTurn implements ShouldQueue
         public readonly ?TargetAi $targetAi = null,
         public readonly ?string $query = null,
         public readonly ?string $replyToMessageId = null,
-        public readonly bool $isHumanIntervention = false
+        public readonly bool $isHumanIntervention = false,
+        public readonly ?string $turnId = null
     ) {
         $this->timeout = (int) config('services.dify.timeout', 120) + 20;
     }
@@ -45,11 +46,24 @@ class ProcessDebateTurn implements ShouldQueue
             'query' => $this->query,
             'reply_to' => $this->replyToMessageId,
             'is_human_intervention' => $this->isHumanIntervention,
+            'turn_id' => $this->turnId,
             'queue_connection' => config('queue.default'),
             'all_properties' => get_object_vars($this),
         ]);
 
         try {
+            // ターンの排他制御
+            $repository = app(\App\Domain\Repositories\DebateSessionRepositoryInterface::class);
+            $session = $repository->findById($this->debateSessionId);
+            if ($session && $this->turnId !== null && $session->currentTurnId !== $this->turnId) {
+                Log::info('ProcessDebateTurn Job Skipped: 既に新しいターンが開始されているか、古いターンのためスキップしました。', [
+                    'session_id' => $this->debateSessionId,
+                    'job_turn_id' => $this->turnId,
+                    'session_current_turn_id' => $session->currentTurnId,
+                ]);
+                return;
+            }
+
             // targetAi が null の場合は execute 内でローテーションロジックが走る
             $useCase->execute(
                 $this->debateSessionId,
