@@ -29,7 +29,7 @@ class StartDebateUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
         $discordAdapter->shouldReceive('postMessage')->once();
 
-        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) {
+        $repository->shouldReceive('save')->times(3)->andReturnUsing(function (DebateSession $session) {
             if ($session->id === null) {
                 $session->id = 1;
             }
@@ -61,7 +61,7 @@ class StartDebateUseCaseTest extends TestCase
         $discordAdapter->shouldReceive('createChannel')->once()->with($topic, 1)->andReturn($channelId);
         $discordAdapter->shouldReceive('postMessage')->once();
 
-        $repository->shouldReceive('save')->twice()->andReturnUsing(function (DebateSession $session) {
+        $repository->shouldReceive('save')->times(3)->andReturnUsing(function (DebateSession $session) {
             if ($session->id === null) {
                 $session->id = 1;
             }

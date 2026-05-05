@@ -63,25 +63,23 @@ class DiscordMessageFormatterTest extends TestCase
         $this->assertEquals(TargetAi::PHI, $result);
     }
 
-    public function test_extractNextAi_falls_back_on_self_mention(): void
+    public function test_extractNextAi_returns_null_on_self_mention(): void
     {
         $content = "次は <@333> さん（自分）にお願い。";
         // 現在の発言者が Phi (333) の場合、自己メンションが検出されるが
-        // 実装ではランダムフォールバックが走るため、nullにはならないはず（他のAIが設定されていれば）
+        // ランダムフォールバックが廃止されたため、null が返るべき
         $result = $this->formatter->extractNextAi($content, TargetAi::PHI);
 
-        $this->assertNotNull($result);
-        $this->assertNotEquals(TargetAi::PHI, $result);
+        $this->assertNull($result);
     }
 
-    public function test_extractNextAi_falls_back_to_random_when_no_mention(): void
+    public function test_extractNextAi_returns_null_when_no_mention(): void
     {
         $content = "メンションがありません。";
-        // Gemini (111) からの呼び出しで、ランダムに他のAI（gemma, phi, llama, gpt-oss-q2）のいずれかが選ばれる
+        // ランダムフォールバックが廃止されたため、null が返るべき
         $result = $this->formatter->extractNextAi($content, TargetAi::GEMINI);
 
-        $this->assertNotNull($result);
-        $this->assertNotEquals(TargetAi::GEMINI, $result);
+        $this->assertNull($result);
     }
 
     public function test_extractAndRemoveMentions_works_correctly(): void
