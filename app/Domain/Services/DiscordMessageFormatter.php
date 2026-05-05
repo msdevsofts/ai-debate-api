@@ -123,40 +123,16 @@ class DiscordMessageFormatter
                     'ai' => $targetAi->value,
                     'current_ai' => $currentAi->value
                 ]);
-                // 自己メンションの場合はランダムフォールバックへ
+                // 自己メンションの場合はループ停止へ
+                return null;
             } elseif ($targetAi !== null) {
                 return $targetAi;
             }
         }
 
-        // メンションが見つからなかった、または自己メンションだった場合
-        \Illuminate\Support\Facades\Log::info("有効なメンションが見つからなかったため、ランダムフォールバックを試みます。");
+        // メンションが見つからなかった場合
+        \Illuminate\Support\Facades\Log::info("有効なメンションが見つからなかったため、ループを停止します。");
 
-        return $this->getRandomFallbackAi($currentAi);
-    }
-
-    /**
-     * 自分とGemini以外のAIからランダムに選択
-     */
-    public function getRandomFallbackAi(TargetAi $currentAi): ?TargetAi
-    {
-        $botIds = config('services.discord.bot_ids', []);
-        $availableAis = [];
-
-        foreach ($botIds as $id => $name) {
-            $ai = TargetAi::fromBotId((string)$id);
-            if ($ai && $ai !== $currentAi && $ai !== TargetAi::GEMINI && $ai !== TargetAi::GEMINI_CONCLUSION) {
-                $availableAis[] = $ai;
-            }
-        }
-
-        if (empty($availableAis)) {
-            return null;
-        }
-
-        $randomAi = $availableAis[array_rand($availableAis)];
-        \Illuminate\Support\Facades\Log::info("Randomly selected next AI: " . $randomAi->value);
-
-        return $randomAi;
+        return null;
     }
 }

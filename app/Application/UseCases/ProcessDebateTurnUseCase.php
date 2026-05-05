@@ -132,13 +132,15 @@ class ProcessDebateTurnUseCase
 
             // 終了判定
             // 1. 司会(Gemini)の結論発言（gemini_conclusion）
-            // 2. ターゲットAIがいない（メンションなし＆フォールバック失敗）
-            // 司会(Gemini)が自分自身をメンションした（＝結論または議論終了の意図）
-            // 人間が介在している場合、AIは次に回すべき相手を明示しないことがあるため、
-            // メンションがない場合は一旦停止する（AIの判断によるループ制御）。
+            // 2. ターゲットAIがいない（有効なメンションが見つからなかった）
             $isConclusion = ($targetAi === TargetAi::GEMINI_CONCLUSION);
 
             if ($targetAi === null || $isConclusion) {
+                if ($targetAi === null) {
+                    \Illuminate\Support\Facades\Log::info('ProcessDebateTurnUseCase: 有効なメンションが見つからなかったため、議論を終了します。', [
+                        'session_id' => $session->id
+                    ]);
+                }
                 $session->complete();
             }
 
